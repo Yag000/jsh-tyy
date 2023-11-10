@@ -1,0 +1,47 @@
+stages:
+  - build
+  - test
+  - format
+
+### Build stage
+#
+# build the project
+build:
+  image: gcc:latest
+  stage: build
+
+  script:
+    - echo "Build the project"
+    - make
+
+### Test stages
+#
+# run the tests
+test:
+  image: gcc:latest
+  stage: test
+
+  dependencies:
+    - build
+
+  script:
+    - echo "Run the tests"
+    - make test
+
+### Format stage
+#
+# check the code Format
+format:
+  image: debian:bookworm-slim
+  stage: format
+
+  script:
+    - echo "Install clang-format"
+    - apt-get update -y
+    - apt-get install -y clang-format
+    - echo "Print clang-format version"
+    - clang-format --version
+    - echo "Install make"
+    - apt-get install -y make
+    - echo "Check the code format"
+    - make check-format
