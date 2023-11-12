@@ -6,6 +6,7 @@ SRCDIR=src
 OBJDIR=obj
 
 SRCFILES := $(shell find $(SRCDIR) -type f -name "*.c")
+ALLFILES := $(SRCFILES) $(shell find $(SRCDIR) -type f -name "*.h")
 OBJFILES := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCFILES))
 
 # Create obj directory at the beginning
@@ -25,10 +26,10 @@ jsh: $(OBJFILES)
 	$(CC) -o $@ $^ $(CFLAGS)
 
 format:
-	clang-format -i $(SRCFILES)
+	clang-format -i $(ALLFILES)
 
 check-format:
-	clang-format --dry-run --Werror $(SRCFILES)
+	clang-format --dry-run --Werror $(ALLFILES)
 
 clean:
 	rm -rf $(OBJDIR) $(EXEC) test
