@@ -28,6 +28,22 @@ test:
     - echo "Run the tests"
     - make test
 
+# run the tests with valgrind
+# to check for memory leaks
+memory_leaks:
+  image: gcc:latest
+  stage: test
+
+  dependencies:
+    - build
+
+  script:
+    - echo "Install valgrind"
+    - apt-get update -y
+    - apt-get install -y valgrind
+    - echo "Run the tests with valgrind"
+    - make test-valgrind
+
 ### Format stage
 #
 # check the code Format
