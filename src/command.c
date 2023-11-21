@@ -1,7 +1,9 @@
 #include "command.h"
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd", "?", "jobs", "fg", "bg", "kill"};
 
@@ -25,15 +27,22 @@ void destroy_command_call(command_call *command_call) {
 /** Prints the command call. */
 void command_call_print(command_call *command_call) {
     int i;
-    fprintf(stdout, "Command call: %s", command_call->name);
+    // This takes care of whitespace size
+    int command_call_length = command_call->argc;
+    for (i = 0; i < command_call->argc; i++) {
+        command_call_length += strlen(command_call->argv[i]);
+    }
+    char *buffer = malloc(sizeof(char) * command_call_length);
     for (i = 0; i < command_call->argc; i++) {
         if (i == command_call->argc - 1) {
-            fprintf(stdout, " %s\n", command_call->argv[i]);
+            sprintf(buffer, "%s", command_call->argv[i]);
+            write(command_call->stdout, buffer, strlen(buffer));
         } else {
-            fprintf(stdout, " %s", command_call->argv[i]);
+            sprintf(buffer, "%s ", command_call->argv[i]);
+            write(command_call->stdout, buffer, strlen(buffer));
         }
     }
-    fprintf(stdout, "\n");
+    free(buffer);
 }
 
 int is_internal_command(command_call *command_call) {

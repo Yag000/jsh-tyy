@@ -31,7 +31,10 @@ void handle_string_test(const char *, const char *, int, const char *, test_info
 void handle_boolean_test(bool, bool, int, const char *, test_info *);
 void handle_int_test(int, int, int, const char *, test_info *);
 
+int open_test_file_to_read(const char *);
+int open_test_file_to_write(const char *);
+
 // All the tests
-test_info *test_example();
+test_info *test_command();
 
 #endif
