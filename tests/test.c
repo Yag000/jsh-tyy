@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     clock_t start = clock();
 
     // Add tests here
-    update_test_info(info, test_example());
+    update_test_info(info, test_command());
 
     // End of tests
     clock_t end = clock();
