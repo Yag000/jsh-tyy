@@ -5,6 +5,7 @@ TEST=test
 
 SRCDIR=src
 OBJDIR=obj
+TMPDIR=tmp
 
 SRCOBJDIR=$(OBJDIR)/$(SRCDIR)
 
@@ -22,6 +23,7 @@ ALLFILES := $(SRCFILES) $(TESTFILES) $(shell find $(SRCDIR) $(TESTDIR) -type f -
 # Create obj directory at the beginning
 $(shell mkdir -p $(SRCOBJDIR))
 $(shell mkdir -p $(TESTOBJDIR))
+$(shell mkdir -p $(TMPDIR))
 
 $(SRCOBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -52,4 +54,4 @@ check-format:
 	clang-format --dry-run --Werror $(ALLFILES)
 
 clean:
-	rm -rf $(OBJDIR) $(EXEC) $(TESTOBJDIR) test
+	rm -rf $(OBJDIR) $(EXEC) $(TESTOBJDIR) $(TEST) $(TMPDIR)

@@ -1,7 +1,10 @@
 #include <assert.h>
+#include <fcntl.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "test_core.h"
 
@@ -123,4 +126,26 @@ void handle_int_test(int expected, int actual, int line, const char *file, test_
         print_no_color();
     }
     info->passed++;
+}
+
+int open_test_file_to_write(const char *filename) {
+    char path[PATH_MAX];
+    sprintf(path, "tmp/%s", filename);
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd == -1) {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+    return fd;
+}
+
+int open_test_file_to_read(const char *filename) {
+    char path[PATH_MAX];
+    sprintf(path, "tmp/%s", filename);
+    int fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+    return fd;
 }
