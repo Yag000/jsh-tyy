@@ -38,6 +38,7 @@ test_info *test_cd() {
     test_cd_path_is_not_dir(info);
 
     // End of tests
+    init_cwd_and_lwd();
     info->time = clock_ticks_to_seconds(clock() - start);
     print_test_footer("cd", info);
     return info;
