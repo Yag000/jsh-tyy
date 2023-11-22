@@ -5,38 +5,46 @@
  * It iterates over the words in the string, separated by the separator.
  */
 #include <stddef.h>
+
 typedef struct string_iterator {
     char *string;
-    char *separator;
+    const char *separator;
     int index;
 } string_iterator;
 
 /** Returns a new string iterator for the given string and separator. */
-string_iterator *new_string_iterator(char *, char *);
+string_iterator *new_string_iterator(char *, const char *);
 
 /** Frees the memory allocated for the string iterator. */
 void destroy_string_iterator(string_iterator *);
 
-/** Returns 0 if there are no more words in the string, 1 otherwise. */
-int has_next_word(const string_iterator *);
+/** Trims start of string iterator from separator. */
+void trim_start(string_iterator *);
 
-/** Returns the next word in the string. */
+/** Returns 1 if the first string starts with the prefix, 0 otherwise. */
+int starts_with(char *, const char *prefix);
+
+/** Returns 0 if there are no more words in the string, 1 otherwise. */
+int has_next_word(string_iterator *);
+
+/** Returns the next word in the string.
+ *  Moreover, it moves the pointer of iterator->string to the index just after
+ *  the next found word. If the iterator does not contain any next word, it
+ *  returns an empty string.
+ */
 char *next_word(string_iterator *);
 
 /** Returns the number of words left in the string. */
 int get_number_of_words_left(const string_iterator *);
 
 /** Returns a new array of strings obtained by splitting the string on the
- * separator.
+ * separator. Set its length to size.
  */
-char **split_string(char *, char *, size_t *);
+char **split_string(char *, const char *, size_t *);
 
 /** Returns a new string that is the concatenation of the strings in the array
  * separated by the separator.
  */
-char *join_strings(char **, char *);
-
-/** Removes any whitespace character from the beginning and end of the string. */
-void trim_string(char *);
+char *join_strings(char **, size_t, char *);
 
 #endif // STRING_UTILS_H

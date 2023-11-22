@@ -1,6 +1,9 @@
 #include "internals.h"
+#include "prompt.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
     if (argc > 1) {
@@ -9,6 +12,7 @@ int main(int argc, char *argv[]) {
     }
 
     init_internals();
+    prompt();
 
     return EXIT_SUCCESS;
 }
