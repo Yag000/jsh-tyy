@@ -47,7 +47,9 @@ typedef struct command_result {
 /** Returns a new command result with the given exit code. */
 command_result *new_command_result(int exit_code, command_call *call);
 
-/** Frees the memory allocated for the command result. */
+/** Frees the memory allocated for the command result.
+ *  Calls `destroy_command_call` to free `command_result-> call`.
+ */
 void destroy_command_result(command_result *command_result);
 
 #endif // COMMAND_H

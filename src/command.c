@@ -57,17 +57,6 @@ int is_internal_command(command_call *command_call) {
     return 0;
 }
 
-command_call *parse_command(char *command_string) {
-    size_t argc;
-    char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
-    if (argc == 0) {
-        free(parsed_command_string);
-        return NULL;
-    }
-    command_call *command = new_command_call(argc, parsed_command_string);
-    return command;
-}
-
 command_result *new_command_result(int exit_code, command_call *command_call) {
     if (command_call == NULL) {
         return NULL;
@@ -84,4 +73,15 @@ command_result *new_command_result(int exit_code, command_call *command_call) {
 void destroy_command_result(command_result *command_result) {
     destroy_command_call(command_result->call);
     free(command_result);
+}
+
+command_call *parse_command(char *command_string) {
+    size_t argc;
+    char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
+    if (argc == 0) {
+        free(parsed_command_string);
+        return NULL;
+    }
+    command_call *command = new_command_call(argc, parsed_command_string);
+    return command;
 }

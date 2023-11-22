@@ -1,6 +1,8 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "test_core.h"
 
@@ -24,6 +26,7 @@ int main(int argc, char *argv[]) {
     // Add tests here
     update_test_info(info, test_string_utils());
     update_test_info(info, test_command());
+    update_test_info(info, test_cd());
 
     // End of tests
     clock_t end = clock();
