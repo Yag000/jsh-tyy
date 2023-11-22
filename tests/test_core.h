@@ -30,11 +30,13 @@ void print_test_name(const char *);
 void handle_string_test(const char *, const char *, int, const char *, test_info *);
 void handle_boolean_test(bool, bool, int, const char *, test_info *);
 void handle_int_test(int, int, int, const char *, test_info *);
+void handle_null_test(void *actual, int line, const char *file, test_info *info);
 
 int open_test_file_to_read(const char *);
 int open_test_file_to_write(const char *);
 
 // All the tests
 test_info *test_command();
+test_info *test_string_utils();
 
 #endif

@@ -1,7 +1,14 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+#include <stddef.h>
 #define INTERNAL_COMMANDS_COUNT 8
+
+#include <linux/limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /** Array of internal command names. */
 extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
@@ -9,7 +16,7 @@ extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
 /** Structure that represents a command call. */
 typedef struct command_call {
     char *name;
-    int argc;
+    size_t argc;
     char **argv;
     int stdin;
     int stdout;
@@ -17,7 +24,7 @@ typedef struct command_call {
 } command_call;
 
 /** Returns a new command call with the given name, argc and argv. */
-command_call *new_command_call(char *name, int argc, char **argv);
+command_call *new_command_call(size_t argc, char **argv);
 
 /** Frees the memory allocated for the command call. */
 void destroy_command_call(command_call *command_call);
