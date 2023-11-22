@@ -82,14 +82,14 @@ void handle_string_test(const char *expected, const char *actual, int line, cons
     info->total++;
     if (strcmp(expected, actual) != 0) {
         print_red();
-        printf("Error: %s != %s at line %d in file %s\n", expected, actual, line, file);
+        printf("Error: '%s' != '%s' at line %d in file %s\n", expected, actual, line, file);
         print_no_color();
         info->failed++;
         return;
     }
     if (debug) {
         print_green();
-        printf("Passed: %s == %s at line %d in file %s\n", expected, actual, line, file);
+        printf("Passed: '%s' == '%s' at line %d in file %s\n", expected, actual, line, file);
         print_no_color();
     }
     info->passed++;
@@ -119,10 +119,28 @@ void handle_int_test(int expected, int actual, int line, const char *file, test_
         printf("Error: %d != %d at line %d in file %s\n", expected, actual, line, file);
         print_no_color();
         info->failed++;
+        return;
     }
     if (debug) {
         print_green();
         printf("Passed: %d == %d at line %d in file %s\n", expected, actual, line, file);
+        print_no_color();
+    }
+    info->passed++;
+}
+
+void handle_null_test(void *actual, int line, const char *file, test_info *info) {
+    info->total++;
+    if (NULL != actual) {
+        print_red();
+        printf("Error: pointer should be NULL at line %d in file %s\n", line, file);
+        print_no_color();
+        info->failed++;
+        return;
+    }
+    if (debug) {
+        print_green();
+        printf("Passed: NULL pointer at line %d in file %s\n", line, file);
         print_no_color();
     }
     info->passed++;
