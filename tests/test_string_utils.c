@@ -16,7 +16,7 @@ static void test_case_join_string(test_info *info);
 
 test_info *test_string_utils() {
     // Test setup
-    print_test_header("String Utils");
+    print_test_header("string_utils");
     clock_t start = clock();
     test_info *info = create_test_info();
 
@@ -31,7 +31,7 @@ test_info *test_string_utils() {
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("String Utils", info);
+    print_test_footer("string_utils", info);
     return info;
 }
 

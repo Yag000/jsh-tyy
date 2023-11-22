@@ -32,7 +32,7 @@ test_info *test_command() {
 void test_no_arguments_command_call_print(test_info *info) {
     print_test_name("Testing command print with no arguments");
 
-    int fd = open_test_file_to_write(".test_command_call_print");
+    int fd = open_test_file_to_write("test_command_call_print.log");
     size_t size;
     char **argv = split_string("pwd", " ", &size);
     command_call *command_call = new_command_call(1, argv);
@@ -42,10 +42,11 @@ void test_no_arguments_command_call_print(test_info *info) {
 
     close(fd);
 
-    fd = open_test_file_to_read(".test_command_call_print");
+    fd = open_test_file_to_read("test_command_call_print.log");
     char buffer[4];
     buffer[3] = '\0';
     read(fd, buffer, 3);
+    close(fd);
 
     char *expected = join_strings(argv, size, " ");
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
@@ -62,7 +63,7 @@ void test_command_call_print_with_arguments(test_info *info) {
     print_test_name("Testing command print with arguments");
 
     int fd;
-    fd = open_test_file_to_write(".test_command_call_print");
+    fd = open_test_file_to_write("test_command_call_print.log");
     argv = split_string("pwd test", " ", &size);
     command_call *command_call = new_command_call(size, argv);
     command_call->stdout = fd;
@@ -71,11 +72,12 @@ void test_command_call_print_with_arguments(test_info *info) {
 
     close(fd);
 
-    fd = open_test_file_to_read(".test_command_call_print");
+    fd = open_test_file_to_read("test_command_call_print.log");
     char buffer[9];
     buffer[8] = '\0';
 
     read(fd, buffer, 8);
+    close(fd);
 
     expected = join_strings(argv, size, " ");
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
@@ -83,7 +85,7 @@ void test_command_call_print_with_arguments(test_info *info) {
 
     destroy_command_call(command_call);
 
-    fd = open_test_file_to_write(".test_command_call_print");
+    fd = open_test_file_to_write("test_command_call_print.log");
     argv = split_string("pwd test test2", " ", &size);
     command_call = new_command_call(3, argv);
     command_call->stdout = fd;
@@ -92,11 +94,12 @@ void test_command_call_print_with_arguments(test_info *info) {
 
     close(fd);
 
-    fd = open_test_file_to_read(".test_command_call_print");
+    fd = open_test_file_to_read("test_command_call_print.log");
     char buffer2[15];
     buffer2[14] = '\0';
 
     read(fd, buffer2, 14);
+    close(fd);
 
     expected = join_strings(argv, size, " ");
     handle_string_test(buffer2, expected, __LINE__, __FILE__, info);
