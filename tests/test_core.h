@@ -3,6 +3,7 @@
 #ifndef TEST_CORE_H
 #define TEST_CORE_H
 
+#include <limits.h>
 #include <stdbool.h>
 #include <time.h>
 
@@ -37,6 +38,7 @@ int open_test_file_to_write(const char *);
 
 // All the tests
 test_info *test_command();
+test_info *test_cd();
 test_info *test_string_utils();
 
 #endif

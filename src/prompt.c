@@ -10,7 +10,7 @@ void prompt() {
         command_call *command = parse_command(buf);
         command_result *command_result;
         if (command != NULL) {
-            command_result = execute_command(command);
+            command_result = execute_command_call(command);
 
             if (command_result != NULL) {
                 destroy_command_result(command_result);
