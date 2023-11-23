@@ -41,6 +41,10 @@ command_result *execute_internal_command(command_call *command_call) {
         command_result->exit_code = last_exit_code_command(command_call);
     }
 
+    else if (strcmp(command_call->name, "pwd") == 0) {
+        command_result->exit_code = pwd(command_call);
+    }
+
     return command_result;
 }
 

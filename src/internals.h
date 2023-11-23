@@ -31,7 +31,7 @@ void init_internals();
  *
  * @param command_call
  *
- * @return `0` if the change worked; `1` otherwise
+ * @return `0` if the change worked; `1` otherwise.
  */
 int cd(command_call *command_call);
 
@@ -43,5 +43,14 @@ int cd(command_call *command_call);
  * @return `0` if the change worked; `1` otherwise
  */
 int last_exit_code_command(command_call *command_call);
+
+/**
+ * Prints on stdout pwd.
+ *
+ * @param command_call
+ *
+ * @return `0` if worked, `1` otherwise.
+ */
+int pwd(command_call *command_call);
 
 #endif // INTERNALS_H
