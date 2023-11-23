@@ -14,5 +14,5 @@ int main(int argc, char *argv[]) {
     init_internals();
     prompt();
 
-    return EXIT_SUCCESS;
+    return exit_code;
 }
