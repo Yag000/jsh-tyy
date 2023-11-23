@@ -8,12 +8,17 @@ command_call *last_command_call;
 char lwd[PATH_MAX];
 const char *COMMAND_SEPARATOR = " ";
 
+int should_exit;
+int exit_code;
+
 command_result *execute_internal_command(command_call *command_call);
 command_result *execute_external_command(command_call *command_call);
 
 void init_internals() {
     last_exit_code = 0;
     last_command_call = NULL;
+    should_exit = 0;
+    exit_code = 0;
 }
 
 command_result *execute_command_call(command_call *command_call) {
@@ -39,6 +44,8 @@ command_result *execute_internal_command(command_call *command_call) {
         command_result->exit_code = cd(command_call);
     } else if (strcmp(command_call->name, "?") == 0) {
         command_result->exit_code = last_exit_code_command(command_call);
+    } else if (strcmp(command_call->name, "exit") == 0) {
+        command_result->exit_code = exit_command(command_call);
     }
 
     else if (strcmp(command_call->name, "pwd") == 0) {
