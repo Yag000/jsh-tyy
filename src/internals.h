@@ -35,4 +35,13 @@ void init_internals();
  */
 int cd(command_call *command_call);
 
+/**
+ * Prints the last exit code
+ *
+ * @param command_call
+ *
+ * @return `0` if the change worked; `1` otherwise
+ */
+int last_exit_code_command(command_call *command_call);
+
 #endif // INTERNALS_H

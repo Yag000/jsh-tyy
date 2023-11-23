@@ -40,5 +40,6 @@ int open_test_file_to_write(const char *);
 test_info *test_command();
 test_info *test_cd();
 test_info *test_string_utils();
+test_info *test_last_exit_code_command();
 
 #endif
