@@ -1,9 +1,10 @@
 #include "prompt.h"
 #include "command.h"
+#include "internals.h"
 #include "string_utils.h"
 
 void prompt() {
-    while (1) {
+    while (!should_exit) {
         char *buf = readline("\001\033[0;32m\002$ \001\033[0m\002");
         add_history(buf);
 
