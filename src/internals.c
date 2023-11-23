@@ -31,12 +31,14 @@ command_result *execute_command_call(command_call *command_call) {
 
 /** Executes an internal command call. */
 command_result *execute_internal_command(command_call *command_call) {
-    command_result *command_result = new_command_result(0, command_call);
+    command_result *command_result = new_command_result(1, command_call);
 
     /** TODO: Implement the remaining internal commands. */
 
     if (strcmp(command_call->name, "cd") == 0) {
         command_result->exit_code = cd(command_call);
+    } else if (strcmp(command_call->name, "?") == 0) {
+        command_result->exit_code = last_exit_code_command(command_call);
     }
 
     return command_result;
