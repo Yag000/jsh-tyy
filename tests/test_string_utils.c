@@ -241,6 +241,16 @@ static void test_case_split_string(test_info *info) {
 
     print_test_name("Testing `split_string`");
 
+    // Empty string
+    result = split_string("", " ", &size);
+    handle_int_test(0, size, __LINE__, __FILE__, info);
+    handle_null_test(result, __LINE__, __FILE__, info);
+
+    // Only separator
+    result = split_string("    ", " ", &size);
+    handle_int_test(0, size, __LINE__, __FILE__, info);
+    handle_null_test(result, __LINE__, __FILE__, info);
+
     // Simple sentence
     result = split_string("this is a sentence", " ", &size);
     handle_int_test(4, size, __LINE__, __FILE__, info);

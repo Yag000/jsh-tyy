@@ -97,6 +97,14 @@ command_call *parse_command(char *command_string) {
         free(parsed_command_string);
         return NULL;
     }
+
+    parsed_command_string = realloc(parsed_command_string, sizeof(char *) * (argc + 1));
+    if (parsed_command_string == NULL) {
+        perror("realloc");
+        return NULL;
+    }
+    parsed_command_string[argc] = NULL;
+
     command_call *command = new_command_call(argc, parsed_command_string);
     return command;
 }

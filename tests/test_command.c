@@ -117,6 +117,10 @@ void test_case_parse_command(test_info *info) {
     command_call = parse_command("");
     handle_null_test(command_call, __LINE__, __FILE__, info);
 
+    // Only spaces
+    command_call = parse_command("     ");
+    handle_null_test(command_call, __LINE__, __FILE__, info);
+
     // Command call with no arguments
     command_call = parse_command("^mv^rm");
     char *expected_1[1] = {"^mv^rm"};
@@ -125,6 +129,7 @@ void test_case_parse_command(test_info *info) {
     for (size_t index = 0; index < command_call->argc; ++index) {
         handle_string_test(expected_1[index], command_call->argv[index], __LINE__, __FILE__, info);
     }
+    handle_null_test(command_call->argv[command_call->argc], __LINE__, __FILE__, info);
     destroy_command_call(command_call);
 
     // Command call with few arguments
@@ -138,6 +143,7 @@ void test_case_parse_command(test_info *info) {
     handle_int_test(0, command_call->stdin, __LINE__, __FILE__, info);
     handle_int_test(1, command_call->stdout, __LINE__, __FILE__, info);
     handle_int_test(2, command_call->stderr, __LINE__, __FILE__, info);
+    handle_null_test(command_call->argv[command_call->argc], __LINE__, __FILE__, info);
     destroy_command_call(command_call);
 
     // Another command call with few arguments
@@ -148,5 +154,6 @@ void test_case_parse_command(test_info *info) {
     for (size_t index = 0; index < command_call->argc; ++index) {
         handle_string_test(expected_3[index], command_call->argv[index], __LINE__, __FILE__, info);
     }
+    handle_null_test(command_call->argv[command_call->argc], __LINE__, __FILE__, info);
     destroy_command_call(command_call);
 }
