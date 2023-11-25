@@ -27,17 +27,17 @@ bool is_lwd_set();
 bool is_valid_path(char *path, struct stat *p_stat, int call_stderr) {
     if ((lstat(path, p_stat)) == -1) {
         switch (errno) {
-        case EACCES:
-            dprintf(call_stderr, "cd: invalid path: %s no access.\n", path);
-            return false;
+            case EACCES:
+                dprintf(call_stderr, "cd: invalid path: %s no access.\n", path);
+                return false;
 
-        case ENOENT:
-            dprintf(call_stderr, "cd: invalid path: %s does not exist.\n", path);
-            return false;
+            case ENOENT:
+                dprintf(call_stderr, "cd: invalid path: %s does not exist.\n", path);
+                return false;
 
-        default:
-            dprintf(call_stderr, "cd: lstat failure. (%s)\n", strerror(errno));
-            return false;
+            default:
+                dprintf(call_stderr, "cd: lstat failure. (%s)\n", strerror(errno));
+                return false;
         }
     }
 
