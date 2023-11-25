@@ -22,6 +22,11 @@ char *get_cwd_trunc_start(size_t size_limit) {
     }
 
     char *trunc_cwd = malloc(size_limit * sizeof(char));
+    if (trunc_cwd == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
     memmove(trunc_cwd, cwd + strlen(cwd) - size_limit, strlen(cwd) - size_limit);
     free(cwd);
     return trunc_cwd;
