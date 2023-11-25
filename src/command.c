@@ -2,12 +2,19 @@
 #include "internals.h"
 #include "string_utils.h"
 #include <stddef.h>
+#include <stdio.h>
 
 const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd", "?", "jobs", "fg", "bg", "kill"};
 
 /** Returns a new command call with the given name, argc and argv. */
 command_call *new_command_call(size_t argc, char **argv) {
+
     command_call *command_call = malloc(sizeof(*command_call));
+    if (command_call == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
     command_call->name = argv[0];
     command_call->argc = argc;
     command_call->argv = argv;
@@ -34,7 +41,13 @@ void command_call_print(command_call *command_call) {
     for (i = 0; i < command_call->argc; i++) {
         command_call_length += strlen(command_call->argv[i]);
     }
+
     char *buffer = malloc(sizeof(char) * command_call_length);
+    if (buffer == NULL) {
+        perror("malloc");
+        return;
+    }
+
     for (i = 0; i < command_call->argc; i++) {
         if (i == command_call->argc - 1) {
             sprintf(buffer, "%s", command_call->argv[i]);
@@ -63,8 +76,10 @@ command_result *new_command_result(int exit_code, command_call *command_call) {
     }
     command_result *command_result = malloc(sizeof(*command_result));
     if (command_result == NULL) {
+        perror("malloc");
         return NULL;
     }
+
     command_result->exit_code = exit_code;
     command_result->call = command_call;
     return command_result;
