@@ -49,7 +49,7 @@ int cd(command_call *command_call);
  *
  * @param command_call
  *
- * @return `last_exit_code`
+ * @return `0` if the cwd was printed; `1` otherwise
  */
 int last_exit_code_command(command_call *command_call);
 

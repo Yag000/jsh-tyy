@@ -7,5 +7,5 @@ int last_exit_code_command(command_call *call) {
         return 1;
     }
     dprintf(call->stdout, "%d\n", last_exit_code);
-    return last_exit_code;
+    return 0;
 }
