@@ -3,7 +3,8 @@
 #include "../src/internals.h"
 #include "test_core.h"
 
-void test_exit_no_arguments(test_info *);
+void test_exit_no_arguments_no_previous_command(test_info *);
+void test_exit_no_arguments_previous_command(test_info *);
 void test_exit_multiple_arguments(test_info *);
 void test_exit_correct_argument(test_info *);
 void test_exit_string_argument(test_info *);
@@ -16,7 +17,8 @@ test_info *test_exit() {
     test_info *info = create_test_info();
 
     // Add tests here
-    test_exit_no_arguments(info);
+    test_exit_no_arguments_no_previous_command(info);
+    test_exit_no_arguments_previous_command(info);
     test_exit_multiple_arguments(info);
     test_exit_correct_argument(info);
     test_exit_string_argument(info);
@@ -29,17 +31,45 @@ test_info *test_exit() {
     return info;
 }
 
-void test_exit_no_arguments(test_info *info) {
-    print_test_name("exit no arguments");
+void test_exit_no_arguments_no_previous_command(test_info *info) {
+    command_call *command;
+    command_result *result;
+
+    print_test_name("exit no arguments | No previous command");
 
     init_internals();
 
-    command_call *command = parse_command("exit");
-    command_result *result = execute_command_call(command);
+    command = parse_command("exit");
+    result = execute_command_call(command);
 
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
     handle_int_test(exit_code, 0, __LINE__, __FILE__, info);
+
+    destroy_command_result(result);
+}
+
+void test_exit_no_arguments_previous_command(test_info *info) {
+    command_call *command;
+    command_result *result;
+
+    print_test_name("exit no arguments | With 1 previous command failed");
+
+    init_internals();
+
+    int stderr_fd = open_test_file_to_write("test_exit_no_arguments_previous_command.log");
+    command = parse_command("? e423423 423 423 42");
+    command->stderr = stderr_fd;
+    result = execute_command_call(command);
+    destroy_command_result(result);
+    close(stderr_fd);
+
+    command = parse_command("exit");
+    result = execute_command_call(command);
+
+    handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
+    handle_int_test(exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
 }
