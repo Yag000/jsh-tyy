@@ -18,7 +18,7 @@ int exit_command(command_call *command_call) {
 
     if (command_call->argc == 1) {
         should_exit = 1;
-        exit_code = 0;
+        exit_code = last_exit_code;
         return 0;
     }
 
