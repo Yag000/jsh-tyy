@@ -14,6 +14,11 @@ string_iterator *new_string_iterator(char *string, const char *separator) {
     }
 
     string_iterator *iterator = malloc(sizeof(string_iterator));
+    if (iterator == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
     iterator->string = string;
     iterator->separator = separator;
     iterator->index = 0;
@@ -65,6 +70,7 @@ char *next_word(string_iterator *iterator) {
 
     char *current_word = malloc((current_word_size + 1) * sizeof(char));
     if (current_word == NULL) {
+        perror("malloc");
         return NULL;
     }
 
@@ -108,6 +114,10 @@ char **split_string(char *string, const char *delimiter, size_t *size) {
     *size = number_of_tokens;
 
     char **tokens = malloc(sizeof(char *) * number_of_tokens);
+    if (tokens == NULL) {
+        perror("malloc");
+        return NULL;
+    }
 
     while (has_next_word(iterator)) {
         tokens[iterator->index] = next_word(iterator);
@@ -134,6 +144,7 @@ char *join_strings(char **tokens, size_t number_of_tokens, char *sep) {
 
     char *joined_string = malloc(total_size * sizeof(char));
     if (joined_string == NULL) {
+        perror("malloc");
         return "";
     }
     joined_string[0] = '\0';
