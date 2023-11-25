@@ -6,6 +6,9 @@
 void prompt() {
     while (!should_exit) {
         char *buf = readline("\001\033[0;32m\002$ \001\033[0m\002");
+        if (buf == NULL) {
+            return;
+        }
         add_history(buf);
 
         command_call *command = parse_command(buf);
