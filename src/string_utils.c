@@ -113,6 +113,11 @@ char **split_string(char *string, const char *delimiter, size_t *size) {
     int number_of_tokens = get_number_of_words_left(iterator);
     *size = number_of_tokens;
 
+    if (number_of_tokens == 0) {
+        destroy_string_iterator(iterator);
+        return NULL;
+    }
+
     char **tokens = malloc(sizeof(char *) * number_of_tokens);
     if (tokens == NULL) {
         perror("malloc");

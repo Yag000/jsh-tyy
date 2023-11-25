@@ -58,16 +58,12 @@ static void test_cd_user_home(test_info *info) {
     char *expected_lwd = calloc(PATH_MAX, sizeof(char));
     getcwd(expected_lwd, PATH_MAX);
 
-    size_t size_argv;
-    char **argv = split_string("cd", " ", &size_argv);
-
-    command_call *call_cd_user_home = new_command_call(size_argv, argv);
-
+    command_call *call_cd_user_home = parse_command("cd");
     int res = cd(call_cd_user_home);
 
-    destroy_command_call(call_cd_user_home);
-
     handle_int_test(0, res, __LINE__, __FILE__, info);
+
+    destroy_command_call(call_cd_user_home);
 
     char *new_cwd = calloc(PATH_MAX, sizeof(char));
     getcwd(new_cwd, PATH_MAX);
@@ -92,10 +88,7 @@ static void test_cd_path_valid(test_info *info) {
     char *expected_lwd = calloc(PATH_MAX, sizeof(char));
     getcwd(expected_lwd, PATH_MAX);
 
-    size_t size_argv;
-    char **argv = split_string("cd tmp/dir", " ", &size_argv);
-
-    command_call *call_cd_home = new_command_call(size_argv, argv);
+    command_call *call_cd_home = parse_command("cd tmp/dir");
 
     int res = cd(call_cd_home);
 
@@ -125,14 +118,8 @@ static void test_cd_previous_exists(test_info *info) {
     char *expected_lwd = calloc(PATH_MAX, sizeof(char));
     realpath(lwd_target, expected_lwd);
 
-    size_t size_argv1;
-    char **argv1 = split_string("cd tmp/dir/subdir", " ", &size_argv1);
-
-    size_t size_argv2;
-    char **argv2 = split_string("cd -", " ", &size_argv2);
-
-    command_call *call_cd_subdir = new_command_call(size_argv1, argv1);
-    command_call *call_cd_previous = new_command_call(size_argv2, argv2);
+    command_call *call_cd_subdir = parse_command("cd tmp/dir/subdir");
+    command_call *call_cd_previous = parse_command("cd -");
 
     cd(call_cd_subdir);
     int res = cd(call_cd_previous);
@@ -158,10 +145,7 @@ static void test_cd_previous_non_existent(test_info *info) {
     char *expected_lwd = calloc(PATH_MAX, sizeof(char));
     getcwd(expected_lwd, PATH_MAX);
 
-    size_t size_argv;
-    char **argv = split_string("cd -", " ", &size_argv);
-
-    command_call *call_cd_previous = new_command_call(size_argv, argv);
+    command_call *call_cd_previous = parse_command("cd -");
 
     int res = cd(call_cd_previous);
 
@@ -185,12 +169,9 @@ static void test_cd_path_non_existent(test_info *info) {
     char *expected_lwd = calloc(PATH_MAX, sizeof(char));
     memmove(expected_lwd, lwd, PATH_MAX);
 
-    size_t size_argv;
-    char **argv = split_string("cd tmp/dir/does/not/exits", " ", &size_argv);
-
     int log_fd = open_test_file_to_write("cd_non_existent_dir.log");
 
-    command_call *call_cd_non_existent = new_command_call(size_argv, argv);
+    command_call *call_cd_non_existent = parse_command("cd tmp/dir/does/not/exits");
     call_cd_non_existent->stderr = log_fd;
 
     int res = cd(call_cd_non_existent);
@@ -216,12 +197,9 @@ static void test_cd_path_is_not_dir(test_info *info) {
     char *expected_lwd = calloc(PATH_MAX, sizeof(char));
     memmove(expected_lwd, lwd, PATH_MAX);
 
-    size_t size_argv;
-    char **argv = split_string("cd tmp/file", " ", &size_argv);
-
     int log_fd = open_test_file_to_write("cd_non_dir.log");
 
-    command_call *call_cd_non_dir = new_command_call(size_argv, argv);
+    command_call *call_cd_non_dir = parse_command("cd tmp/file");
     call_cd_non_dir->stderr = log_fd;
 
     int res = cd(call_cd_non_dir);
