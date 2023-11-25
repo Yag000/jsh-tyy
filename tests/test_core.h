@@ -43,5 +43,6 @@ test_info *test_string_utils();
 test_info *test_last_exit_code_command();
 test_info *test_pwd();
 test_info *test_exit();
+test_info *test_utils();
 
 #endif
