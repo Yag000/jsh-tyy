@@ -1,9 +1,7 @@
 #include "../src/command.h"
 #include "../src/internals.h"
-#include "../src/string_utils.h"
 #include "../src/utils.h"
 #include "test_core.h"
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -93,7 +91,7 @@ static void test_case_deeper(test_info *info) {
 
     close(fd);
 
-    char *expected_path = get_cwd_raw();
+    char *expected_path = get_current_wd();
 
     // Go back to previous wd
     cd_command_call = parse_command("cd -");

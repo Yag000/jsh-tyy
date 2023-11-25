@@ -1,9 +1,7 @@
 #include "../src/string_utils.h"
 #include "test_core.h"
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 static void test_case_starts_with(test_info *);
 static void test_case_trim_start(test_info *);
@@ -13,6 +11,7 @@ static void test_case_new_string_iterator(test_info *info);
 static void test_case_next_word(test_info *info);
 static void test_case_split_string(test_info *info);
 static void test_case_join_string(test_info *info);
+static void test_case_trunc_start(test_info *info);
 
 test_info *test_string_utils() {
     // Test setup
@@ -28,6 +27,7 @@ test_info *test_string_utils() {
     test_case_next_word(info);
     test_case_split_string(info);
     test_case_join_string(info);
+    test_case_trunc_start(info);
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
@@ -343,5 +343,47 @@ static void test_case_join_string(test_info *info) {
         free(splitted[index]);
     }
     free(splitted);
+    free(result);
+}
+
+static void test_case_trunc_start(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trunc_start`");
+
+    // NULL string
+    result = trunc_start(NULL, 20);
+    handle_null_test(result, __LINE__, __FILE__, info);
+
+    // Empty string
+    result = trunc_start("", 20);
+    handle_string_test("", result, __LINE__, __FILE__, info);
+    free(result);
+
+    // 0 size
+    result = trunc_start("balabala beuleubeuleu", 0);
+    handle_string_test("", result, __LINE__, __FILE__, info);
+
+    // Too long size
+    result = trunc_start("Hellooo", 20);
+    handle_string_test("Hellooo", result, __LINE__, __FILE__, info);
+    free(result);
+
+    // Empty string and 0 size
+    result = trunc_start("", 0);
+    handle_string_test("", result, __LINE__, __FILE__, info);
+
+    // Size = string length
+    result = trunc_start("123456", 6);
+    handle_string_test("123456", result, __LINE__, __FILE__, info);
+    free(result);
+
+    // Classic sentences
+    result = trunc_start("Pacman eats ghosts", 6);
+    handle_string_test("ghosts", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trunc_start("9876543210", 2);
+    handle_string_test("10", result, __LINE__, __FILE__, info);
     free(result);
 }

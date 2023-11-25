@@ -11,7 +11,7 @@ int pwd(command_call *command_call) {
         return 1;
     }
 
-    char *cwd = get_cwd_raw();
+    char *cwd = get_current_wd();
 
     if (cwd == NULL) {
         dprintf(command_call->stderr, "pwd: getcwd failure. (%s)\n", strerror(errno));
@@ -19,9 +19,7 @@ int pwd(command_call *command_call) {
     }
 
     dprintf(command_call->stdout, "%s\n", cwd);
-    if (cwd != NULL) {
-        free(cwd);
-    }
+    free(cwd);
 
     return 0;
 }

@@ -162,3 +162,31 @@ char *join_strings(char **tokens, size_t number_of_tokens, char *sep) {
     }
     return joined_string;
 }
+
+char *trunc_start(char *str, size_t to_keep) {
+    if (str == NULL) {
+        return str;
+    }
+
+    if (to_keep == 0) {
+        return "";
+    }
+
+    char *truncated = malloc((to_keep + 1) * sizeof(char));
+
+    if (truncated == NULL) {
+        perror("malloc(): trunc string at start");
+        return "";
+    }
+
+    if (to_keep >= strlen(str)) {
+        memmove(truncated, str, to_keep + 1);
+        truncated[to_keep] = '\0';
+        return truncated;
+    }
+
+    memmove(truncated, str + strlen(str) - to_keep, to_keep + 1);
+    truncated[to_keep] = '\0';
+
+    return truncated;
+}
