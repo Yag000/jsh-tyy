@@ -86,7 +86,7 @@ void test_after_failed_command(test_info *info) {
     command->stdout = out_fd;
     result = execute_command_call(command);
 
-    handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
     close(out_fd);
@@ -98,6 +98,13 @@ void test_after_failed_command(test_info *info) {
     close(read_fd);
     handle_string_test(error_code, "1", __LINE__, __FILE__, info);
     free(error_code);
+
+    command = parse_command("exit");
+    result = execute_command_call(command);
+    destroy_command_result(result);
+
+    handle_int_test(last_exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(exit_code, 1, __LINE__, __FILE__, info);
 }
 
 void test_after_successful_command(test_info *info) {
