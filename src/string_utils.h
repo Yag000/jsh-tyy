@@ -47,4 +47,7 @@ char **split_string(char *, const char *, size_t *);
  */
 char *join_strings(char **, size_t, char *);
 
+/** Keep the last `to_keep` characters from a string. */
+char *trunc_start(char *str, size_t to_keep);
+
 #endif // STRING_UTILS_H

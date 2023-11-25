@@ -23,6 +23,9 @@ extern int should_exit;
 /** Exit code to be used when exiting the shell. */
 extern int exit_code;
 
+/** The maximum size a prompt can have. */
+extern const size_t LIMIT_PROMPT_SIZE;
+
 /** Executes the command call. */
 command_result *execute_command_call(command_call *command_call);
 
