@@ -44,6 +44,24 @@ memory_leaks:
     - echo "Run the tests with valgrind"
     - make test-valgrind
 
+
+
+# run the tests provided by our 
+# professors
+test_professor:
+  image: gcc:latest
+  stage: test
+
+  dependencies:
+    - build
+
+  script:
+    - echo "Install valgrind"
+    - apt-get update -y
+    - apt-get install -y valgrind
+    - echo "Run professors tests"
+    - make test-professor
+
 ### Format stage
 #
 # check the code Format
