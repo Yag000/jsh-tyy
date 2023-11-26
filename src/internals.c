@@ -1,7 +1,14 @@
 #include "internals.h"
 #include "command.h"
+#include <asm-generic/errno-base.h>
+#include <errno.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 int last_exit_code;
 command_call *last_command_call;
@@ -56,8 +63,27 @@ command_result *execute_internal_command(command_call *command_call) {
 
 /** Executes an external command call. */
 command_result *execute_external_command(command_call *command_call) {
-    /** TODO: Implement external commands. */
-    return new_command_result(1, command_call);
+    command_result *command_result = new_command_result(1, command_call);
+
+    pid_t pid;
+    int status;
+    switch (pid = fork()) {
+        case 0:
+            execvp(command_call->name, command_call->argv);
+            dprintf(command_call->stderr, "jsh: %s: %s\n", command_call->name, strerror(errno));
+            exit(1);
+        default:
+            if (waitpid(pid, &status, 0) < 0) {
+                perror("waitpid");
+                exit(1);
+            }
+    }
+    if (WIFEXITED(status)) {
+        exit_code = WEXITSTATUS(status);
+        command_result->exit_code = WEXITSTATUS(status);
+    }
+
+    return command_result;
 }
 
 /** Updates the command history with the given result. */
