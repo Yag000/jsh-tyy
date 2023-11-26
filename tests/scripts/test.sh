@@ -1,9 +1,32 @@
 #!/bin/bash
 
-echo "Running test scripts..."
+test_passed=0
 
-bash tests/scripts/test_cd.sh
-bash tests/scripts/test_pwd.sh
-bash tests/scripts/test_external_command.sh
+echo
+echo "-> Running test scripts..."
+echo
 
-echo "Done running test scripts."
+echo "====================="
+echo
+echo "--> Running our own tests..."
+echo
+
+
+echo
+echo "--> Executing tests..."
+echo
+
+./test || test_passed=1
+
+echo 
+echo "====================="
+echo
+if [ $test_passed -eq 0 ]; then
+    echo "All tests passed!"
+    echo
+else
+    echo "Some tests failed."
+    echo
+fi
+
+exit $test_passed
