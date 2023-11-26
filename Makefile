@@ -1,6 +1,8 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -lreadline
 EXEC=jsh
+
+
 TEST=test
 
 SRCDIR=src
@@ -13,6 +15,11 @@ TESTDIR=tests
 TESTOBJDIR=$(OBJDIR)/$(TESTDIR)
 
 SCRIPTSDIR=$(TESTDIR)/scripts
+
+TEST_SCRIPT=$(SCRIPTSDIR)/test.sh
+TEST_SETUP=$(SCRIPTSDIR)/test_setup.sh
+TEST_PROFESSOR=$(SCRIPTSDIR)/test_professor.sh
+
 
 SRCFILES := $(shell find $(SRCDIR) -type f -name "*.c")
 TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c")
@@ -40,10 +47,13 @@ $(EXEC): $(OBJFILES)
 	$(CC) -o $@ $^ $(CFLAGS)
 
 $(TEST): compile_tests setup_test_env
-	./$(TEST)
+	./$(TEST_SCRIPT)
 
 test-valgrind: compile_tests_valgrind setup_test_env
 	valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=1 ./$(TEST)
+
+test-professor: 
+	./$(TEST_PROFESSOR)
 
 compile_tests_valgrind: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES)
 	$(CC) -o $(TEST) $^ -g $(CFLAGS)
@@ -53,7 +63,7 @@ compile_tests: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES)
 
 setup_test_env:
 	$(shell mkdir -p $(TMPDIR))
-	./$(SCRIPTSDIR)/$(TEST).sh
+	./$(TEST_SETUP)
 
 format fmt:
 	clang-format -i $(ALLFILES)

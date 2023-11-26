@@ -1,5 +1,5 @@
 #!/bin/bash
-
+(
 if [ ! -f AUTHORS.md -o ! -s AUTHORS.md ]; then
   printf "Erreur: ce script doit être lancé depuis la racine du dépôt git de votre projet. \
 Je n'ai pas détecté de fichier AUTHORS.md non vide dans le répertoire courant. Abandon.\n" >&2
@@ -41,4 +41,4 @@ if ! cd "$AUTOTEST_DIR"; then
 fi
 
 exec bash ./autotests.sh
-
+)
