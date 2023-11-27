@@ -75,16 +75,17 @@ void prompt() {
     while (!should_exit) {
         char *prompt_string = get_prompt_string();
         char *buf = readline(prompt_string);
+
         if (buf == NULL) {
             return;
         }
-        add_history(buf);
 
         free(prompt_string);
 
         command_call *command = parse_command(buf);
         command_result *command_result;
         if (command != NULL) {
+            add_history(buf);
             command_result = execute_command_call(command);
 
             if (command_result != NULL) {
