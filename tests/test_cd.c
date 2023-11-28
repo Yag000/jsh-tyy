@@ -1,5 +1,4 @@
 #include "../src/internals.h"
-#include "../src/string_utils.h"
 #include "test_core.h"
 #include <linux/limits.h>
 #include <stdio.h>
