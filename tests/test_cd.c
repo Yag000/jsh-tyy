@@ -18,6 +18,7 @@ static void test_cd_previous_exists(test_info *);
 static void test_cd_previous_non_existent(test_info *);
 static void test_cd_path_non_existent(test_info *);
 static void test_cd_path_is_not_dir(test_info *);
+static void test_cd_symlink(test_info *);
 
 test_info *test_cd() {
     // Test setup
@@ -36,6 +37,7 @@ test_info *test_cd() {
     test_cd_previous_non_existent(info);
     test_cd_path_non_existent(info);
     test_cd_path_is_not_dir(info);
+    test_cd_symlink(info);
 
     // End of tests
     init_cwd_and_lwd();
@@ -211,5 +213,37 @@ static void test_cd_path_is_not_dir(test_info *info) {
     handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
 
     free(expected_cwd);
+    free(expected_lwd);
+}
+
+static void test_cd_symlink(test_info *info) {
+    print_test_name("Testing cd on a symlink");
+
+    init_cwd_and_lwd();
+
+    char target_path[] = "tmp/dir/symlink_target";
+    char *expected_cwd = realpath(target_path, NULL);
+
+    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
+    getcwd(expected_lwd, PATH_MAX);
+
+    int log_fd = open_test_file_to_write("cd_symlink.log");
+
+    command_call *call_cd_symlink = parse_command("cd tmp/dir/subdir/symlink_source");
+    call_cd_symlink->stderr = log_fd;
+
+    int res = cd(call_cd_symlink);
+    close(log_fd);
+
+    destroy_command_call(call_cd_symlink);
+
+    char *cwd = getcwd(NULL, PATH_MAX);
+
+    handle_int_test(0, res, __LINE__, __FILE__, info);
+    handle_string_test(expected_cwd, cwd, __LINE__, __FILE__, info);
+    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+
+    free(expected_cwd);
+    free(cwd);
     free(expected_lwd);
 }
