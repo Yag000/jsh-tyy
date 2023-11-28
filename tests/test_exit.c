@@ -1,4 +1,3 @@
-
 #include "../src/command.h"
 #include "../src/internals.h"
 #include "test_core.h"
