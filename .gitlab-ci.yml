@@ -16,8 +16,8 @@ build:
 
 ### Test stages
 #
-# run the tests
-test:
+# run the unit tests
+test_unit:
   image: gcc:latest
   stage: test
 
@@ -25,8 +25,8 @@ test:
     - build
 
   script:
-    - echo "Run the tests"
-    - make test
+    - echo "Run the unit tests"
+    - make test-unit
 
 # run the tests with valgrind
 # to check for memory leaks
@@ -43,8 +43,6 @@ memory_leaks:
     - apt-get install -y valgrind
     - echo "Run the tests with valgrind"
     - make test-valgrind
-
-
 
 # run the tests provided by our 
 # professors

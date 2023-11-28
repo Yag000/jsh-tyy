@@ -46,7 +46,9 @@ all: $(EXEC)
 $(EXEC): $(OBJFILES) 
 	$(CC) -o $@ $^ $(CFLAGS)
 
-$(TEST): compile_tests setup_test_env
+$(TEST): test-unit test-valgrind test-professor
+
+test-unit: compile_tests setup_test_env
 	./$(TEST_SCRIPT)
 
 test-valgrind: compile_tests_valgrind setup_test_env
