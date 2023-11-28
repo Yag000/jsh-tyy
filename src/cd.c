@@ -25,7 +25,7 @@ bool is_lwd_set();
  * @return true if the path is valid; false otherwise.
  */
 bool is_valid_path(char *path, struct stat *p_stat, int call_stderr) {
-    if ((lstat(path, p_stat)) == -1) {
+    if ((stat(path, p_stat)) == -1) {
         switch (errno) {
             case EACCES:
                 dprintf(call_stderr, "cd: invalid path: %s no access.\n", path);
