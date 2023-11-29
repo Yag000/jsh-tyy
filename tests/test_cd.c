@@ -56,8 +56,7 @@ static void test_cd_user_home(test_info *info) {
     init_cwd_and_lwd();
 
     char *expected_cwd = getenv("HOME");
-    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_lwd, PATH_MAX);
+    char *expected_lwd = getcwd(NULL, PATH_MAX);
 
     command_call *call_cd_user_home = parse_command("cd");
     int res = cd(call_cd_user_home);
@@ -66,8 +65,7 @@ static void test_cd_user_home(test_info *info) {
 
     destroy_command_call(call_cd_user_home);
 
-    char *new_cwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(new_cwd, PATH_MAX);
+    char *new_cwd = getcwd(NULL, PATH_MAX);
 
     handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
     handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
@@ -83,11 +81,8 @@ static void test_cd_path_valid(test_info *info) {
 
     char target_path[] = "tmp/dir";
 
-    char *expected_cwd = calloc(PATH_MAX, sizeof(char));
-    realpath(target_path, expected_cwd);
-
-    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_lwd, PATH_MAX);
+    char *expected_cwd = realpath(target_path, NULL);
+    char *expected_lwd = getcwd(NULL, PATH_MAX);
 
     command_call *call_cd_home = parse_command("cd tmp/dir");
 
@@ -95,8 +90,7 @@ static void test_cd_path_valid(test_info *info) {
 
     destroy_command_call(call_cd_home);
 
-    char *new_cwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(new_cwd, PATH_MAX);
+    char *new_cwd = getcwd(NULL, PATH_MAX);
 
     handle_int_test(0, res, __LINE__, __FILE__, info);
     handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
@@ -112,12 +106,10 @@ static void test_cd_previous_exists(test_info *info) {
 
     init_cwd_and_lwd();
 
-    char *expected_cwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_cwd, PATH_MAX);
+    char *expected_cwd = getcwd(NULL, PATH_MAX);
 
     char lwd_target[] = "tmp/dir/subdir";
-    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
-    realpath(lwd_target, expected_lwd);
+    char *expected_lwd = realpath(lwd_target, NULL);
 
     command_call *call_cd_subdir = parse_command("cd tmp/dir/subdir");
     command_call *call_cd_previous = parse_command("cd -");
@@ -128,9 +120,13 @@ static void test_cd_previous_exists(test_info *info) {
     destroy_command_call(call_cd_subdir);
     destroy_command_call(call_cd_previous);
 
+    char *new_cwd = getcwd(NULL, PATH_MAX);
+
     handle_int_test(0, res, __LINE__, __FILE__, info);
+    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
     handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
 
+    free(new_cwd);
     free(expected_cwd);
     free(expected_lwd);
 }
@@ -140,11 +136,8 @@ static void test_cd_previous_non_existent(test_info *info) {
 
     init_cwd_and_lwd();
 
-    char *expected_cwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_cwd, PATH_MAX);
-
-    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_lwd, PATH_MAX);
+    char *expected_cwd = getcwd(NULL, PATH_MAX);
+    char *expected_lwd = getcwd(NULL, PATH_MAX);
 
     command_call *call_cd_previous = parse_command("cd -");
 
@@ -152,11 +145,16 @@ static void test_cd_previous_non_existent(test_info *info) {
 
     destroy_command_call(call_cd_previous);
 
+    char *new_cwd = getcwd(NULL, PATH_MAX);
+
     handle_int_test(0, res, __LINE__, __FILE__, info);
+    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
     handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+    handle_string_test(new_cwd, lwd, __LINE__, __FILE__, info);
 
     free(expected_cwd);
     free(expected_lwd);
+    free(new_cwd);
 }
 
 static void test_cd_path_non_existent(test_info *info) {
@@ -164,11 +162,8 @@ static void test_cd_path_non_existent(test_info *info) {
 
     init_cwd_and_lwd();
 
-    char *expected_cwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_cwd, PATH_MAX);
-
-    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
-    memmove(expected_lwd, lwd, PATH_MAX);
+    char *expected_cwd = getcwd(NULL, PATH_MAX);
+    char *expected_lwd = strdup(lwd);
 
     int log_fd = open_test_file_to_write("cd_non_existent_dir.log");
 
@@ -180,11 +175,15 @@ static void test_cd_path_non_existent(test_info *info) {
 
     destroy_command_call(call_cd_non_existent);
 
+    char *new_cwd = getcwd(NULL, PATH_MAX);
+
     handle_int_test(1, res, __LINE__, __FILE__, info);
+    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
     handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
 
     free(expected_cwd);
     free(expected_lwd);
+    free(new_cwd);
 }
 
 static void test_cd_path_is_not_dir(test_info *info) {
@@ -192,11 +191,8 @@ static void test_cd_path_is_not_dir(test_info *info) {
 
     init_cwd_and_lwd();
 
-    char *expected_cwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_cwd, PATH_MAX);
-
-    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
-    memmove(expected_lwd, lwd, PATH_MAX);
+    char *expected_cwd = getcwd(NULL, PATH_MAX);
+    char *expected_lwd = strdup(lwd);
 
     int log_fd = open_test_file_to_write("cd_non_dir.log");
 
@@ -208,11 +204,15 @@ static void test_cd_path_is_not_dir(test_info *info) {
 
     destroy_command_call(call_cd_non_dir);
 
+    char *new_cwd = getcwd(NULL, PATH_MAX);
+
     handle_int_test(1, res, __LINE__, __FILE__, info);
+    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
     handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
 
     free(expected_cwd);
     free(expected_lwd);
+    free(new_cwd);
 }
 
 static void test_cd_symlink(test_info *info) {
@@ -222,9 +222,7 @@ static void test_cd_symlink(test_info *info) {
 
     char target_path[] = "tmp/dir/symlink_target";
     char *expected_cwd = realpath(target_path, NULL);
-
-    char *expected_lwd = calloc(PATH_MAX, sizeof(char));
-    getcwd(expected_lwd, PATH_MAX);
+    char *expected_lwd = getcwd(NULL, PATH_MAX);
 
     int log_fd = open_test_file_to_write("cd_symlink.log");
 
@@ -236,13 +234,13 @@ static void test_cd_symlink(test_info *info) {
 
     destroy_command_call(call_cd_symlink);
 
-    char *cwd = getcwd(NULL, PATH_MAX);
+    char *new_cwd = getcwd(NULL, PATH_MAX);
 
     handle_int_test(0, res, __LINE__, __FILE__, info);
-    handle_string_test(expected_cwd, cwd, __LINE__, __FILE__, info);
+    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
     handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
 
     free(expected_cwd);
-    free(cwd);
     free(expected_lwd);
+    free(new_cwd);
 }
