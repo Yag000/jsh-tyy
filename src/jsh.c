@@ -1,4 +1,5 @@
 #include "internals.h"
+#include "jobs.h"
 #include "prompt.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,5 +14,6 @@ int main(int argc, char *argv[]) {
     init_internals();
     prompt();
 
+    destroy_job_table();
     return exit_code;
 }

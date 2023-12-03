@@ -1,5 +1,3 @@
-#include "internals.h"
-#include "command.h"
 #include <asm-generic/errno-base.h>
 #include <errno.h>
 #include <stddef.h>
@@ -9,6 +7,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#include "command.h"
+#include "internals.h"
+#include "jobs.h"
 
 int last_exit_code;
 command_call *last_command_call;
@@ -27,6 +29,7 @@ void init_internals() {
     last_command_call = NULL;
     should_exit = 0;
     exit_code = 0;
+    init_job_table();
 }
 
 command_result *execute_command_call(command_call *command_call) {

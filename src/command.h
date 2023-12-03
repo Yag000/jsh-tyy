@@ -1,14 +1,14 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-#include <stddef.h>
-#define INTERNAL_COMMANDS_COUNT 8
-
 #include <linux/limits.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#define INTERNAL_COMMANDS_COUNT 8
 
 /** Array of internal command names. */
 extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
