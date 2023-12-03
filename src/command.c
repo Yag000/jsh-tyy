@@ -3,6 +3,7 @@
 #include "string_utils.h"
 #include <stddef.h>
 #include <stdio.h>
+#include <unistd.h>
 
 const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd", "?", "jobs", "fg", "bg", "kill"};
 
@@ -36,28 +37,13 @@ void destroy_command_call(command_call *command_call) {
 /** Prints the command call. */
 void command_call_print(command_call *command_call) {
     size_t i;
-    // This takes care of whitespace size
-    size_t command_call_length = command_call->argc;
-    for (i = 0; i < command_call->argc; i++) {
-        command_call_length += strlen(command_call->argv[i]);
-    }
-
-    char *buffer = malloc(sizeof(char) * command_call_length);
-    if (buffer == NULL) {
-        perror("malloc");
-        return;
-    }
-
     for (i = 0; i < command_call->argc; i++) {
         if (i == command_call->argc - 1) {
-            sprintf(buffer, "%s", command_call->argv[i]);
-            write(command_call->stdout, buffer, strlen(buffer));
+            dprintf(STDOUT_FILENO, "%s", command_call->argv[i]);
         } else {
-            sprintf(buffer, "%s ", command_call->argv[i]);
-            write(command_call->stdout, buffer, strlen(buffer));
+            dprintf(STDOUT_FILENO, "%s ", command_call->argv[i]);
         }
     }
-    free(buffer);
 }
 
 int is_internal_command(command_call *command_call) {
