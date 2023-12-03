@@ -45,5 +45,6 @@ test_info *test_pwd();
 test_info *test_exit();
 test_info *test_utils();
 test_info *test_external_commands();
+test_info *test_jobs();
 
 #endif

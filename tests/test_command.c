@@ -1,10 +1,8 @@
 #include "../src/command.h"
-#include "../src/string_utils.h"
 #include "test_core.h"
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 void test_no_arguments_command_call_print(test_info *info);
@@ -33,12 +31,15 @@ void test_no_arguments_command_call_print(test_info *info) {
     print_test_name("Testing command print with no arguments");
 
     int fd = open_test_file_to_write("test_command_call_print.log");
-    size_t size;
-    char **argv = split_string("pwd", " ", &size);
-    command_call *command_call = new_command_call(1, argv);
-    command_call->stdout = fd;
+
+    int current_stdout = dup(STDOUT_FILENO);
+
+    dup2(fd, STDOUT_FILENO);
+    command_call *command_call = parse_command("pwd");
 
     command_call_print(command_call);
+
+    dup2(current_stdout, STDOUT_FILENO);
 
     close(fd);
 
@@ -48,27 +49,25 @@ void test_no_arguments_command_call_print(test_info *info) {
     read(fd, buffer, 3);
     close(fd);
 
-    char *expected = join_strings(argv, size, " ");
+    char *expected = "pwd";
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
-    free(expected);
 
     destroy_command_call(command_call);
 }
 
 void test_command_call_print_with_arguments(test_info *info) {
-    size_t size;
-    char **argv;
-    char *expected;
-
     print_test_name("Testing command print with arguments");
 
     int fd;
     fd = open_test_file_to_write("test_command_call_print.log");
-    argv = split_string("pwd test", " ", &size);
-    command_call *command_call = new_command_call(size, argv);
-    command_call->stdout = fd;
+    int current_stdout = dup(STDOUT_FILENO);
+    dup2(fd, STDOUT_FILENO);
+
+    command_call *command_call = parse_command("pwd test");
 
     command_call_print(command_call);
+
+    dup2(current_stdout, STDOUT_FILENO);
 
     close(fd);
 
@@ -79,18 +78,19 @@ void test_command_call_print_with_arguments(test_info *info) {
     read(fd, buffer, 8);
     close(fd);
 
-    expected = join_strings(argv, size, " ");
+    char *expected = "pwd test";
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
-    free(expected);
 
     destroy_command_call(command_call);
 
     fd = open_test_file_to_write("test_command_call_print.log");
-    argv = split_string("pwd test test2", " ", &size);
-    command_call = new_command_call(3, argv);
-    command_call->stdout = fd;
+    current_stdout = dup(STDOUT_FILENO);
+    dup2(fd, STDOUT_FILENO);
+    command_call = parse_command("pwd test test2");
 
     command_call_print(command_call);
+
+    dup2(current_stdout, STDOUT_FILENO);
 
     close(fd);
 
@@ -101,9 +101,8 @@ void test_command_call_print_with_arguments(test_info *info) {
     read(fd, buffer2, 14);
     close(fd);
 
-    expected = join_strings(argv, size, " ");
+    expected = "pwd test test2";
     handle_string_test(buffer2, expected, __LINE__, __FILE__, info);
-    free(expected);
 
     destroy_command_call(command_call);
 }

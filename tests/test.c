@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "../src/jobs.h"
 #include "test_core.h"
 
 bool debug;
@@ -30,6 +31,7 @@ int main(int argc, char *argv[]) {
     update_test_info(info, test_pwd());
     update_test_info(info, test_exit());
     update_test_info(info, test_external_commands());
+    update_test_info(info, test_jobs());
 
     // End of tests
     clock_t end = clock();
@@ -39,6 +41,8 @@ int main(int argc, char *argv[]) {
     printf("\nTotal: ");
     print_test_info(info);
     destroy_test_info(info);
+
+    destroy_job_table();
 
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
