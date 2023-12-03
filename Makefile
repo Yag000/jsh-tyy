@@ -18,6 +18,7 @@ SCRIPTSDIR=$(TESTDIR)/scripts
 
 TEST_SCRIPT=$(SCRIPTSDIR)/test.sh
 TEST_SETUP=$(SCRIPTSDIR)/test_setup.sh
+TEST_VALGRIND=$(SCRIPTSDIR)/test_valgrind.sh
 TEST_PROFESSOR=$(SCRIPTSDIR)/test_professor.sh
 
 
@@ -52,7 +53,7 @@ test-unit: compile_tests setup_test_env
 	./$(TEST_SCRIPT)
 
 test-valgrind: compile_tests_valgrind setup_test_env
-	valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=1 ./$(TEST)
+	./$(TEST_VALGRIND)
 
 test-professor: 
 	./$(TEST_PROFESSOR)
