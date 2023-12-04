@@ -43,7 +43,7 @@ void test_exit_no_arguments_no_previous_command(test_info *info) {
 
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
-    handle_int_test(exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(last_exit_code, 0, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
 }
@@ -66,9 +66,9 @@ void test_exit_no_arguments_previous_command(test_info *info) {
     command = parse_command("exit");
     result = execute_command_call(command);
 
-    handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
-    handle_int_test(exit_code, 1, __LINE__, __FILE__, info);
+    handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
 }
@@ -88,7 +88,7 @@ void test_exit_multiple_arguments(test_info *info) {
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
-    handle_int_test(exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
     close(error_fd);
@@ -108,9 +108,9 @@ void test_exit_correct_argument(test_info *info) {
         command = parse_command(command_string);
         result = execute_command_call(command);
 
-        handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
+        handle_int_test(result->exit_code, i, __LINE__, __FILE__, info);
         handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
-        handle_int_test(exit_code, i, __LINE__, __FILE__, info);
+        handle_int_test(last_exit_code, i, __LINE__, __FILE__, info);
 
         destroy_command_result(result);
         free(command_string);
@@ -133,7 +133,7 @@ void test_exit_string_argument(test_info *info) {
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
-    handle_int_test(exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
     close(errorfd);
@@ -155,7 +155,7 @@ void test_exit_out_of_range_argument(test_info *info) {
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
-    handle_int_test(exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
     close(errorfd);
@@ -169,7 +169,7 @@ void test_exit_out_of_range_argument(test_info *info) {
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
-    handle_int_test(exit_code, 0, __LINE__, __FILE__, info);
+    handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
     close(errorfd);

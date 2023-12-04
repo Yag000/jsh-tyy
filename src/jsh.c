@@ -15,5 +15,5 @@ int main(int argc, char *argv[]) {
     prompt();
 
     destroy_job_table();
-    return exit_code;
+    return last_exit_code;
 }
