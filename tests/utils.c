@@ -22,6 +22,12 @@ void handle_command_call_test(command_call *actual, command_call *expected, int 
         }
     }
 
+    handle_int_test(actual->background, expected->background, line, file, info);
+    if (failed != info->failed) {
+        info->failed++;
+        return;
+    }
+
     handle_int_test(actual->stdin, expected->stdin, line, file, info);
     if (failed != info->failed) {
         info->failed++;
