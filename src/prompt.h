@@ -12,5 +12,6 @@
 #include <unistd.h>
 
 void prompt();
+char *get_prompt_string();
 
 #endif // PROMPT_H
