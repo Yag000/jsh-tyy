@@ -18,6 +18,7 @@ typedef struct command_call {
     char *name;
     size_t argc;
     char **argv;
+    int background; // 1 if the command is to be executed in background, 0 otherwise
     int stdin;
     int stdout;
     int stderr;
