@@ -1,6 +1,7 @@
 #include "prompt.h"
 #include "command.h"
 #include "internals.h"
+#include "jobs.h"
 #include "utils.h"
 #include <readline/readline.h>
 #include <stddef.h>
@@ -8,8 +9,15 @@
 #include <string.h>
 
 char *get_prompt_string() {
+    char *total_jobs = malloc(1024 * sizeof(char));
+    if (total_jobs == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    sprintf(total_jobs, "[%ld]", job_table_size);
+
     char *prompt_string;
-    char *total_jobs = "[0]";
     char *jobs = in_yellow(total_jobs);
     char *pwd = get_current_wd();
     char *path = in_blue(pwd);
@@ -60,6 +68,7 @@ char *get_prompt_string() {
         sprintf(prompt_string, "%s%s%s", jobs, path, dollar_sign);
     }
 
+    free(total_jobs);
     free(jobs);
     free(dots);
     free(pwd);

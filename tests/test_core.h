@@ -46,5 +46,6 @@ test_info *test_exit();
 test_info *test_utils();
 test_info *test_external_commands();
 test_info *test_jobs();
+test_info *test_prompt();
 
-#endif
+#endif // TEST_CORE_H
