@@ -8,9 +8,6 @@
 /** Last exit code. */
 extern int last_exit_code;
 
-/** Last command call. */
-extern command_call *last_command_call;
-
 /** Last working directory */
 extern char lwd[PATH_MAX];
 
@@ -19,9 +16,6 @@ extern const char *COMMAND_SEPARATOR;
 
 /** 1 if the shell should exit, 0 otherwise. */
 extern int should_exit;
-
-/** Exit code to be used when exiting the shell. */
-extern int exit_code;
 
 /** The maximum size a prompt can have. */
 extern const size_t LIMIT_PROMPT_SIZE;

@@ -13,22 +13,18 @@
 #include "jobs.h"
 
 int last_exit_code;
-command_call *last_command_call;
 char lwd[PATH_MAX];
 const char *COMMAND_SEPARATOR = " ";
 const size_t LIMIT_PROMPT_SIZE = 30;
 
 int should_exit;
-int exit_code;
 
 command_result *execute_internal_command(command_call *command_call);
 command_result *execute_external_command(command_call *command_call);
 
 void init_internals() {
     last_exit_code = 0;
-    last_command_call = NULL;
     should_exit = 0;
-    exit_code = 0;
     init_job_table();
 }
 
@@ -82,7 +78,6 @@ command_result *execute_external_command(command_call *command_call) {
             }
     }
     if (WIFEXITED(status)) {
-        exit_code = WEXITSTATUS(status);
         command_result->exit_code = WEXITSTATUS(status);
     }
 
@@ -93,6 +88,5 @@ command_result *execute_external_command(command_call *command_call) {
 void update_command_history(command_result *result) {
     if (result != NULL) {
         last_exit_code = result->exit_code;
-        last_command_call = result->call;
     }
 }
