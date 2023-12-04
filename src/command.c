@@ -19,6 +19,7 @@ command_call *new_command_call(size_t argc, char **argv) {
     command_call->name = argv[0];
     command_call->argc = argc;
     command_call->argv = argv;
+    command_call->background = 0;
     command_call->stdin = 0;
     command_call->stdout = 1;
     command_call->stderr = 2;
