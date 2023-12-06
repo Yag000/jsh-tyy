@@ -4,6 +4,7 @@
 #include "string_utils.h"
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd", "?", "jobs", "fg", "bg", "kill"};
@@ -86,21 +87,36 @@ void destroy_command_result(command_result *command_result) {
     free(command_result);
 }
 
-command_call *parse_command(char *command_string) {
+command_call **parse_command(char *command_string, size_t *total_commands) {
+
+    /* WIP */
+
+    *total_commands = 1;
+
+    command_call **commands = malloc(*total_commands * sizeof(command_call));
+    if (commands == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
     size_t argc;
     char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
     if (argc == 0) {
         free(parsed_command_string);
+        free(commands);
         return NULL;
     }
 
     parsed_command_string = realloc(parsed_command_string, sizeof(char *) * (argc + 1));
     if (parsed_command_string == NULL) {
         perror("realloc");
+        free(commands);
         return NULL;
     }
     parsed_command_string[argc] = NULL;
 
     command_call *command = new_command_call(argc, parsed_command_string);
-    return command;
+    commands[0] = command;
+
+    return commands;
 }

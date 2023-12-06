@@ -37,8 +37,8 @@ void command_call_print(command_call *command_call);
 /** Returns 1 if the command call is an internal command, 0 otherwise. */
 int is_internal_command(command_call *command_call);
 
-/** Parses the command string and returns a command call. */
-command_call *parse_command(char *command);
+/** Parses the command string and returns an array of command calls. */
+command_call **parse_command(char *command, size_t *total_commands);
 
 /** Structure that represents the result of a command.
  *  - If the command is an internal command or it is ran on foreground then

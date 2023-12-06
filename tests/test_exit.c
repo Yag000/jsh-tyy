@@ -31,25 +31,28 @@ test_info *test_exit() {
 }
 
 void test_exit_no_arguments_no_previous_command(test_info *info) {
-    command_call *command;
+    command_call **commands;
+    size_t total_commands;
     command_result *result;
 
     print_test_name("exit no arguments | No previous command");
 
     init_internals();
 
-    command = parse_command("exit");
-    result = execute_command_call(command);
+    commands = parse_command("exit", &total_commands);
+    result = execute_command_call(commands[0]);
 
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
     handle_int_test(last_exit_code, 0, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
+    free(commands);
 }
 
 void test_exit_no_arguments_previous_command(test_info *info) {
-    command_call *command;
+    command_call **commands;
+    size_t total_commands;
     command_result *result;
 
     print_test_name("exit no arguments | With 1 previous command failed");
@@ -57,34 +60,37 @@ void test_exit_no_arguments_previous_command(test_info *info) {
     init_internals();
 
     int stderr_fd = open_test_file_to_write("test_exit_no_arguments_previous_command.log");
-    command = parse_command("? e423423 423 423 42");
-    command->stderr = stderr_fd;
-    result = execute_command_call(command);
+    commands = parse_command("? e423423 423 423 42", &total_commands);
+    commands[0]->stderr = stderr_fd;
+    result = execute_command_call(commands[0]);
     destroy_command_result(result);
     close(stderr_fd);
+    free(commands);
 
-    command = parse_command("exit");
-    result = execute_command_call(command);
+    commands = parse_command("exit", &total_commands);
+    result = execute_command_call(commands[0]);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
     handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
+    free(commands);
 }
 
 void test_exit_multiple_arguments(test_info *info) {
-    command_call *command;
+    command_call **commands;
+    size_t total_commands;
     command_result *result;
     int error_fd;
     print_test_name("exit multiple arguments");
 
     init_internals();
 
-    command = parse_command("exit 1 2 3");
+    commands = parse_command("exit 1 2 3", &total_commands);
     error_fd = open_test_file_to_write("test_exit_multiple_arguments.log");
-    command->stderr = error_fd;
-    result = execute_command_call(command);
+    commands[0]->stderr = error_fd;
+    result = execute_command_call(commands[0]);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
@@ -92,11 +98,14 @@ void test_exit_multiple_arguments(test_info *info) {
 
     destroy_command_result(result);
     close(error_fd);
+    free(commands);
 }
 
 void test_exit_correct_argument(test_info *info) {
-    command_call *command;
+    command_call **commands;
+    size_t total_commands;
     command_result *result;
+
     print_test_name("exit correct argument");
 
     init_internals();
@@ -105,8 +114,8 @@ void test_exit_correct_argument(test_info *info) {
         init_internals();
         char *command_string = malloc(10);
         sprintf(command_string, "exit %d", i);
-        command = parse_command(command_string);
-        result = execute_command_call(command);
+        commands = parse_command(command_string, &total_commands);
+        result = execute_command_call(commands[0]);
 
         handle_int_test(result->exit_code, i, __LINE__, __FILE__, info);
         handle_int_test(should_exit, 1, __LINE__, __FILE__, info);
@@ -114,22 +123,25 @@ void test_exit_correct_argument(test_info *info) {
 
         destroy_command_result(result);
         free(command_string);
+        free(commands);
     }
 }
 
 void test_exit_string_argument(test_info *info) {
-    command_call *command;
+    command_call **commands;
+    size_t total_commands;
     command_result *result;
+
     int errorfd;
     print_test_name("exit string argument");
 
     init_internals();
 
-    command = parse_command("exit test");
+    commands = parse_command("exit test", &total_commands);
 
     errorfd = open_test_file_to_write("test_exit_string_argument.log");
-    command->stderr = errorfd;
-    result = execute_command_call(command);
+    commands[0]->stderr = errorfd;
+    result = execute_command_call(commands[0]);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
@@ -137,21 +149,24 @@ void test_exit_string_argument(test_info *info) {
 
     destroy_command_result(result);
     close(errorfd);
+    free(commands);
 }
 
 void test_exit_out_of_range_argument(test_info *info) {
-    command_call *command;
+    command_call **commands;
+    size_t total_commands;
     command_result *result;
+
     int errorfd;
     print_test_name("exit out of range argument: 256");
 
     init_internals();
 
-    command = parse_command("exit 256");
+    commands = parse_command("exit 256", &total_commands);
 
     errorfd = open_test_file_to_write("test_exit_out_of_range_argument_256.log");
-    command->stderr = errorfd;
-    result = execute_command_call(command);
+    commands[0]->stderr = errorfd;
+    result = execute_command_call(commands[0]);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
@@ -159,13 +174,14 @@ void test_exit_out_of_range_argument(test_info *info) {
 
     destroy_command_result(result);
     close(errorfd);
+    free(commands);
 
     print_test_name("exit out of range argument: -1");
-    command = parse_command("exit -1");
+    commands = parse_command("exit -1", &total_commands);
 
     errorfd = open_test_file_to_write("test_exit_out_of_range_argument_negative.log");
-    command->stderr = errorfd;
-    result = execute_command_call(command);
+    commands[0]->stderr = errorfd;
+    result = execute_command_call(commands[0]);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
     handle_int_test(should_exit, 0, __LINE__, __FILE__, info);
@@ -173,4 +189,5 @@ void test_exit_out_of_range_argument(test_info *info) {
 
     destroy_command_result(result);
     close(errorfd);
+    free(commands);
 }
