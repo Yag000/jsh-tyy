@@ -34,7 +34,7 @@ void test_promt_string_no_jobs(test_info *info) {
     job_table_size = 0;
     char *prompt_string = get_prompt_string();
 
-    char *expected = ("\001\033[0;33m\002[0]");
+    char *expected = ("\001\033[0;33m\002");
     prompt_string[strlen(expected)] = '\0';
     handle_string_test(prompt_string, expected, __LINE__, __FILE__, info);
 
@@ -46,9 +46,8 @@ void test_promt_string_with_one_jobs(test_info *info) {
 
     init_job_table();
 
-    size_t total_commands;
-    command_call **commands = parse_command("pwd", &total_commands);
-    job *job = new_job(commands[0], 100, RUNNING, FOREGROUND);
+    command_call *command = parse_command("pwd");
+    job *job = new_job(command, 100, RUNNING, FOREGROUND);
     add_job(job);
 
     char *prompt_string = get_prompt_string();
@@ -58,7 +57,6 @@ void test_promt_string_with_one_jobs(test_info *info) {
     handle_string_test(prompt_string, expected, __LINE__, __FILE__, info);
 
     free(prompt_string);
-    free(commands);
 
     init_job_table();
 }
@@ -71,9 +69,9 @@ void test_promt_string_with_jobs(test_info *info) {
     char *expected = malloc(100);
 
     for (int i = 0; i < 100; i++) {
-        size_t total_commands;
-        command_call **commands = parse_command("pwd", &total_commands);
-        job *job = new_job(commands[0], 100, RUNNING, FOREGROUND);
+
+        command_call *command = parse_command("pwd");
+        job *job = new_job(command, 100, RUNNING, FOREGROUND);
         add_job(job);
 
         snprintf(expected, 100, "\001\033[0;33m\002[%d]", i + 1);
@@ -83,7 +81,6 @@ void test_promt_string_with_jobs(test_info *info) {
 
         handle_string_test(prompt_string, expected, __LINE__, __FILE__, info);
         free(prompt_string);
-        free(commands);
     }
 
     free(expected);
@@ -97,11 +94,10 @@ void test_promt_string_remove_jobs(test_info *info) {
     init_job_table();
 
     for (int i = 0; i < 100; i++) {
-        size_t total_commands;
-        command_call **commands = parse_command("pwd", &total_commands);
-        job *job = new_job(commands[0], 100, RUNNING, FOREGROUND);
+
+        command_call *command = parse_command("pwd");
+        job *job = new_job(command, 100, RUNNING, FOREGROUND);
         add_job(job);
-        free(commands);
     }
 
     char *expected = malloc(100);
