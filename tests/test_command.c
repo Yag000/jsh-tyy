@@ -53,9 +53,10 @@ void test_no_arguments_command_call_print(test_info *info) {
     int current_stdout = dup(STDOUT_FILENO);
 
     dup2(fd, STDOUT_FILENO);
-    command_call *command_call = parse_command("pwd");
+    size_t total_commands = 0;
+    command_call **commands = parse_command("pwd", &total_commands);
 
-    command_call_print(command_call);
+    command_call_print(commands[0]);
 
     dup2(current_stdout, STDOUT_FILENO);
 
@@ -70,7 +71,8 @@ void test_no_arguments_command_call_print(test_info *info) {
     char *expected = "pwd";
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
 
-    destroy_command_call(command_call);
+    destroy_command_call(commands[0]);
+    free(commands);
 }
 
 void test_command_call_print_with_arguments(test_info *info) {
@@ -81,9 +83,10 @@ void test_command_call_print_with_arguments(test_info *info) {
     int current_stdout = dup(STDOUT_FILENO);
     dup2(fd, STDOUT_FILENO);
 
-    command_call *command_call = parse_command("pwd test");
+    size_t total_commands = 0;
+    command_call **commands = parse_command("pwd test", &total_commands);
 
-    command_call_print(command_call);
+    command_call_print(commands[0]);
 
     dup2(current_stdout, STDOUT_FILENO);
 
@@ -99,14 +102,15 @@ void test_command_call_print_with_arguments(test_info *info) {
     char *expected = "pwd test";
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
 
-    destroy_command_call(command_call);
+    destroy_command_call(commands[0]);
+    free(commands);
 
     fd = open_test_file_to_write("test_command_call_print.log");
     current_stdout = dup(STDOUT_FILENO);
     dup2(fd, STDOUT_FILENO);
-    command_call = parse_command("pwd test test2");
+    commands = parse_command("pwd test test2", &total_commands);
 
-    command_call_print(command_call);
+    command_call_print(commands[0]);
 
     dup2(current_stdout, STDOUT_FILENO);
 
@@ -122,56 +126,61 @@ void test_command_call_print_with_arguments(test_info *info) {
     expected = "pwd test test2";
     handle_string_test(buffer2, expected, __LINE__, __FILE__, info);
 
-    destroy_command_call(command_call);
+    destroy_command_call(commands[0]);
+    free(commands);
 }
 
 void test_case_parse_command(test_info *info) {
-    command_call *command_call;
+    command_call **commands;
+    size_t total_commands = 0;
 
     print_test_name("Testing `parse_command`");
 
     // Empty command string
-    command_call = parse_command("");
-    handle_null_test(command_call, __LINE__, __FILE__, info);
+    commands = parse_command("", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
 
     // Only spaces
-    command_call = parse_command("     ");
-    handle_null_test(command_call, __LINE__, __FILE__, info);
+    commands = parse_command("     ", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
 
     // Command call with no arguments
-    command_call = parse_command("^mv^rm");
+    commands = parse_command("^mv^rm", &total_commands);
     char *expected_1[1] = {"^mv^rm"};
-    handle_string_test(expected_1[0], command_call->name, __LINE__, __FILE__, info);
-    handle_int_test(1, command_call->argc, __LINE__, __FILE__, info);
-    for (size_t index = 0; index < command_call->argc; ++index) {
-        handle_string_test(expected_1[index], command_call->argv[index], __LINE__, __FILE__, info);
+    handle_string_test(expected_1[0], commands[0]->name, __LINE__, __FILE__, info);
+    handle_int_test(1, commands[0]->argc, __LINE__, __FILE__, info);
+    for (size_t index = 0; index < commands[0]->argc; ++index) {
+        handle_string_test(expected_1[index], commands[0]->argv[index], __LINE__, __FILE__, info);
     }
-    handle_null_test(command_call->argv[command_call->argc], __LINE__, __FILE__, info);
-    destroy_command_call(command_call);
+    handle_null_test(commands[0]->argv[commands[0]->argc], __LINE__, __FILE__, info);
+    destroy_command_call(commands[0]);
+    free(commands);
 
     // Command call with few arguments
-    command_call = parse_command("nvim -A /absolute/path/to/launch/in/neovim");
+    commands = parse_command("nvim -A /absolute/path/to/launch/in/neovim", &total_commands);
     char *expected_2[3] = {"nvim", "-A", "/absolute/path/to/launch/in/neovim"};
-    handle_string_test(expected_2[0], command_call->name, __LINE__, __FILE__, info);
-    handle_int_test(3, command_call->argc, __LINE__, __FILE__, info);
-    for (size_t index = 0; index < command_call->argc; ++index) {
-        handle_string_test(expected_2[index], command_call->argv[index], __LINE__, __FILE__, info);
+    handle_string_test(expected_2[0], commands[0]->name, __LINE__, __FILE__, info);
+    handle_int_test(3, commands[0]->argc, __LINE__, __FILE__, info);
+    for (size_t index = 0; index < commands[0]->argc; ++index) {
+        handle_string_test(expected_2[index], commands[0]->argv[index], __LINE__, __FILE__, info);
     }
-    handle_int_test(0, command_call->background, __LINE__, __FILE__, info);
-    handle_int_test(0, command_call->stdin, __LINE__, __FILE__, info);
-    handle_int_test(1, command_call->stdout, __LINE__, __FILE__, info);
-    handle_int_test(2, command_call->stderr, __LINE__, __FILE__, info);
-    handle_null_test(command_call->argv[command_call->argc], __LINE__, __FILE__, info);
-    destroy_command_call(command_call);
+    handle_int_test(0, commands[0]->background, __LINE__, __FILE__, info);
+    handle_int_test(0, commands[0]->stdin, __LINE__, __FILE__, info);
+    handle_int_test(1, commands[0]->stdout, __LINE__, __FILE__, info);
+    handle_int_test(2, commands[0]->stderr, __LINE__, __FILE__, info);
+    handle_null_test(commands[0]->argv[commands[0]->argc], __LINE__, __FILE__, info);
+    destroy_command_call(commands[0]);
+    free(commands);
 
     // Another command call with few arguments
-    command_call = parse_command("rm -rf --no-preserve-root /");
+    commands = parse_command("rm -rf --no-preserve-root /", &total_commands);
     char *expected_3[4] = {"rm", "-rf", "--no-preserve-root", "/"};
-    handle_string_test(expected_3[0], command_call->name, __LINE__, __FILE__, info);
-    handle_int_test(4, command_call->argc, __LINE__, __FILE__, info);
-    for (size_t index = 0; index < command_call->argc; ++index) {
-        handle_string_test(expected_3[index], command_call->argv[index], __LINE__, __FILE__, info);
+    handle_string_test(expected_3[0], commands[0]->name, __LINE__, __FILE__, info);
+    handle_int_test(4, commands[0]->argc, __LINE__, __FILE__, info);
+    for (size_t index = 0; index < commands[0]->argc; ++index) {
+        handle_string_test(expected_3[index], commands[0]->argv[index], __LINE__, __FILE__, info);
     }
-    handle_null_test(command_call->argv[command_call->argc], __LINE__, __FILE__, info);
-    destroy_command_call(command_call);
+    handle_null_test(commands[0]->argv[commands[0]->argc], __LINE__, __FILE__, info);
+    destroy_command_call(commands[0]);
+    free(commands);
 }
