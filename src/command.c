@@ -87,9 +87,30 @@ void destroy_command_result(command_result *command_result) {
     free(command_result);
 }
 
-command_call **parse_command(char *command_string, size_t *total_commands) {
+command_call *parse_command(char *command_string) {
 
-    /* WIP */
+    size_t argc;
+    char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
+    if (argc == 0) {
+        free(parsed_command_string);
+        return NULL;
+    }
+
+    parsed_command_string = realloc(parsed_command_string, sizeof(char *) * (argc + 1));
+    if (parsed_command_string == NULL) {
+        perror("realloc");
+        return NULL;
+    }
+    parsed_command_string[argc] = NULL;
+
+    command_call *command = new_command_call(argc, parsed_command_string);
+
+    return command;
+}
+
+command_call **parse_read_line(char *command_string, size_t *total_commands) {
+
+    /* TODO : Parse readlines into multiples commands */
 
     *total_commands = 1;
 
@@ -98,25 +119,6 @@ command_call **parse_command(char *command_string, size_t *total_commands) {
         perror("malloc");
         return NULL;
     }
-
-    size_t argc;
-    char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
-    if (argc == 0) {
-        free(parsed_command_string);
-        free(commands);
-        return NULL;
-    }
-
-    parsed_command_string = realloc(parsed_command_string, sizeof(char *) * (argc + 1));
-    if (parsed_command_string == NULL) {
-        perror("realloc");
-        free(commands);
-        return NULL;
-    }
-    parsed_command_string[argc] = NULL;
-
-    command_call *command = new_command_call(argc, parsed_command_string);
-    commands[0] = command;
 
     return commands;
 }
