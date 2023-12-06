@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
+void test_destroy_command_call_null();
+void test_destroy_command_result_null();
+
 void test_no_arguments_command_call_print(test_info *info);
 void test_command_call_print_with_arguments(test_info *info);
 void test_case_parse_command(test_info *info);
@@ -17,6 +20,9 @@ test_info *test_command() {
     test_info *info = create_test_info();
 
     // Add tests here
+    test_destroy_command_call_null();
+    test_destroy_command_result_null();
+
     test_no_arguments_command_call_print(info);
     test_command_call_print_with_arguments(info);
     test_case_parse_command(info);
@@ -25,6 +31,18 @@ test_info *test_command() {
     info->time = clock_ticks_to_seconds(clock() - start);
     print_test_footer("command", info);
     return info;
+}
+
+void test_destroy_command_call_null() {
+    print_test_name("Testing `destroy_command_call` with NULL");
+
+    destroy_command_call(NULL);
+}
+
+void test_destroy_command_result_null() {
+    print_test_name("Testing `destroy_command_result` with NULL");
+
+    destroy_command_result(NULL);
 }
 
 void test_no_arguments_command_call_print(test_info *info) {
