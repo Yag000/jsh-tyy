@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #define INTERNAL_COMMANDS_COUNT 8
+#define UNINITIALIZED_PID -2
 
 /** Array of internal command names. */
 extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
@@ -39,10 +40,18 @@ int is_internal_command(command_call *command_call);
 /** Parses the command string and returns a command call. */
 command_call *parse_command(char *command);
 
-/** Structure that represents the result of a command. */
+/** Structure that represents the result of a command.
+ *  - If the command is an internal command or it is ran on foreground then
+ *  `pid` is set to `UNINITIALIZED_PID` and `job_id` to `UNINITIALIZED_JOB_ID`.
+ *  - If the `pid` is set to something else than `UNINITIALIZED_PID`, then the `command_call` will
+ *  be `NULL`, as that information will be stored in the `job_table`, using
+ *  `job_id - 1` as key.
+ * */
 typedef struct command_result {
     int exit_code;
     command_call *call;
+    pid_t pid;
+    size_t job_id;
 } command_result;
 
 /** Returns a new command result with the given exit code. */
