@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
     update_test_info(info, test_external_commands());
     update_test_info(info, test_jobs());
     update_test_info(info, test_prompt());
+    update_test_info(info, test_background_jobs());
 
     // End of tests
     clock_t end = clock();

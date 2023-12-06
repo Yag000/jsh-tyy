@@ -1,5 +1,6 @@
 #include "command.h"
 #include "internals.h"
+#include "jobs.h"
 #include "string_utils.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -28,6 +29,9 @@ command_call *new_command_call(size_t argc, char **argv) {
 
 /** Frees the memory allocated for the command call. */
 void destroy_command_call(command_call *command_call) {
+    if (command_call == NULL) {
+        return;
+    }
     for (size_t index = 0; index < command_call->argc; index++) {
         free(command_call->argv[index]);
     }
@@ -69,10 +73,15 @@ command_result *new_command_result(int exit_code, command_call *command_call) {
 
     command_result->exit_code = exit_code;
     command_result->call = command_call;
+    command_result->pid = UNINITIALIZED_PID;
+    command_result->job_id = UNINITIALIZED_JOB_ID;
     return command_result;
 }
 
 void destroy_command_result(command_result *command_result) {
+    if (command_result == NULL) {
+        return;
+    }
     destroy_command_call(command_result->call);
     free(command_result);
 }

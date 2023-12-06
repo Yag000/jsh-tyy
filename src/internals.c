@@ -63,24 +63,36 @@ command_result *execute_internal_command(command_call *command_call) {
 /** Executes an external command call. */
 command_result *execute_external_command(command_call *command_call) {
     command_result *command_result = new_command_result(1, command_call);
-
     pid_t pid;
     int status;
-    switch (pid = fork()) {
-        case 0:
-            execvp(command_call->name, command_call->argv);
-            dprintf(command_call->stderr, "jsh: %s: %s\n", command_call->name, strerror(errno));
-            exit(1);
-        default:
-            if (waitpid(pid, &status, 0) < 0) {
-                perror("waitpid");
-                exit(1);
-            }
-    }
-    if (WIFEXITED(status)) {
-        command_result->exit_code = WEXITSTATUS(status);
+
+    pid = fork();
+
+    if (pid == 0) {
+        execvp(command_call->name, command_call->argv);
+        dprintf(command_call->stderr, "jsh: %s: %s\n", command_call->name, strerror(errno));
+        exit(1);
     }
 
+    if (command_call->background == 0) {
+        if (waitpid(pid, &status, 0) < 0) {
+            perror("waitpid");
+            exit(1);
+        }
+        if (WIFEXITED(status)) {
+            command_result->exit_code = WEXITSTATUS(status);
+        }
+
+        return command_result;
+    }
+
+    job *job = new_job(command_call, pid, RUNNING, BACKGROUND);
+    int job_id = add_job(job);
+
+    command_result->job_id = job_id;
+    command_result->pid = pid;
+    command_result->exit_code = 0;
+    command_result->call = NULL;
     return command_result;
 }
 
