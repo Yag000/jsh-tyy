@@ -33,9 +33,10 @@ void test_launching_one_bg_job(test_info *info) {
     int fd = open_test_file_to_write("test_launching_one_bg_job.log");
     dup2(fd, STDOUT_FILENO);
 
-    command_call *command = parse_command("ls");
-    command->background = 1;
-    command_result *result = execute_command_call(command);
+    size_t total_commands;
+    command_call **commands = parse_command("ls", &total_commands);
+    commands[0]->background = 1;
+    command_result *result = execute_command_call(commands[0]);
 
     dup2(old_stdout, STDOUT_FILENO);
 
@@ -45,9 +46,10 @@ void test_launching_one_bg_job(test_info *info) {
     handle_int_test(result->job_id, 1, __LINE__, __FILE__, info);
 
     handle_int_test(job_table_size, 1, __LINE__, __FILE__, info);
-    handle_command_call_test(job_table[0]->command, command, __LINE__, __FILE__, info);
+    handle_command_call_test(job_table[0]->command, commands[0], __LINE__, __FILE__, info);
 
     destroy_command_result(result);
+    free(commands);
 
     init_job_table();
 }
@@ -59,12 +61,13 @@ void test_launching_multiple_bg_jobs(test_info *info) {
 
     int old_stdout = dup(STDOUT_FILENO);
     int fd = open_test_file_to_write("test_launching_multiple_bg_jobs.log");
+    size_t total_commands;
 
     for (int i = 0; i < INITIAL_JOB_TABLE_CAPACITY + 2; i++) {
         dup2(fd, STDOUT_FILENO);
-        command_call *command = parse_command("ls");
-        command->background = 1;
-        command_result *result = execute_command_call(command);
+        command_call **commands = parse_command("ls", &total_commands);
+        commands[0]->background = 1;
+        command_result *result = execute_command_call(commands[0]);
 
         dup2(old_stdout, STDOUT_FILENO);
 
@@ -72,9 +75,10 @@ void test_launching_multiple_bg_jobs(test_info *info) {
         handle_int_test(result->job_id, i + 1, __LINE__, __FILE__, info);
 
         handle_int_test(job_table_size, i + 1, __LINE__, __FILE__, info);
-        handle_command_call_test(job_table[i]->command, command, __LINE__, __FILE__, info);
+        handle_command_call_test(job_table[i]->command, commands[0], __LINE__, __FILE__, info);
 
         destroy_command_result(result);
+        free(commands);
     }
 
     close(fd);
