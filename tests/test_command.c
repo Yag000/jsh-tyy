@@ -1,8 +1,11 @@
 #include "../src/command.h"
 #include "test_core.h"
+#include "utils.h"
 #include <fcntl.h>
+#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <strings.h>
 #include <unistd.h>
 
 void test_destroy_command_call_null();
@@ -11,6 +14,15 @@ void test_destroy_command_result_null();
 void test_no_arguments_command_call_print(test_info *info);
 void test_command_call_print_with_arguments(test_info *info);
 void test_case_parse_command(test_info *info);
+void test_invalid_background_parsing(test_info *info);
+void test_simple_background_parsing_no_args_no_spaces(test_info *info);
+void test_simple_background_parsing_spaces_no_args(test_info *info);
+void test_simple_background_parsing_args_no_spaces(test_info *info);
+void test_simple_background_parsing_args_spaces(test_info *info);
+void test_complex_background_parsing_no_args_no_spaces(test_info *info);
+void test_complex_background_parsing_args_spaces(test_info *info);
+void test_complex_background_parsing_args_no_spaces(test_info *info);
+void test_complex_background_parsing_args_spaces(test_info *info);
 
 test_info *test_command() {
 
@@ -26,6 +38,15 @@ test_info *test_command() {
     test_no_arguments_command_call_print(info);
     test_command_call_print_with_arguments(info);
     test_case_parse_command(info);
+    test_invalid_background_parsing(info);
+    test_simple_background_parsing_no_args_no_spaces(info);
+    test_simple_background_parsing_spaces_no_args(info);
+    test_simple_background_parsing_args_no_spaces(info);
+    test_simple_background_parsing_args_spaces(info);
+    test_complex_background_parsing_no_args_no_spaces(info);
+    test_complex_background_parsing_args_spaces(info);
+    test_complex_background_parsing_args_no_spaces(info);
+    test_complex_background_parsing_args_spaces(info);
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
@@ -175,4 +196,215 @@ void test_case_parse_command(test_info *info) {
     }
     handle_null_test(command->argv[command->argc], __LINE__, __FILE__, info);
     destroy_command_call(command);
+}
+
+void test_invalid_background_parsing(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | Invalid");
+
+    // Single Ampersand
+    commands = parse_read_line("&", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+
+    // Empty at start
+    commands = parse_read_line("    &", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+
+    // Empty at the end
+    commands = parse_read_line("&      ", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+
+    // Empty at start and end
+    commands = parse_read_line("        &      ", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+
+    // Multiples &
+    commands = parse_read_line("&&", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+    commands = parse_read_line("&&&", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+    commands = parse_read_line("  &  &  ", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+    commands = parse_read_line("  &  &  &&  ", &total_commands);
+    handle_null_test(commands, __LINE__, __FILE__, info);
+}
+
+void test_simple_background_parsing_no_args_no_spaces(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | Simple - No arguments - No spaces");
+
+    commands = parse_read_line("pwd &", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(1, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected = parse_command("pwd");
+    expected->background = 1;
+    handle_command_call_test(commands[0], expected, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected);
+    destroy_command_call(commands[0]);
+    free(commands);
+}
+
+void test_simple_background_parsing_spaces_no_args(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | Simple - No arguments - With spaces");
+
+    commands = parse_read_line("    pwd  &    ", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(1, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected = parse_command("pwd");
+    expected->background = 1;
+    handle_command_call_test(commands[0], expected, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected);
+    destroy_command_call(commands[0]);
+    free(commands);
+}
+
+void test_simple_background_parsing_args_no_spaces(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | Simple - With arguments - No spaces");
+
+    commands = parse_read_line("aoc -d 24 -y 2003 submit &", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(1, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected = parse_command("aoc -d 24 -y 2003 submit");
+    expected->background = 1;
+    handle_command_call_test(commands[0], expected, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected);
+    destroy_command_call(commands[0]);
+    free(commands);
+}
+
+void test_simple_background_parsing_args_spaces(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | Simple - With arguments - With spaces");
+
+    commands = parse_read_line("    cargo  build     --release   &   ", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(1, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected = parse_command("    cargo  build     --release ");
+    expected->background = 1;
+    handle_command_call_test(commands[0], expected, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected);
+    destroy_command_call(commands[0]);
+    free(commands);
+}
+
+void test_complex_background_parsing_no_args_no_spaces(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | a & b - No args - No spaces");
+
+    commands = parse_read_line("pwd & ls", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(2, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected_0 = parse_command("pwd");
+    expected_0->background = 1;
+    handle_command_call_test(commands[0], expected_0, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_0);
+    destroy_command_call(commands[0]);
+
+    command_call *expected_1 = parse_command("ls");
+    expected_1->background = 0;
+    handle_command_call_test(commands[1], expected_1, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_1);
+    destroy_command_call(commands[1]);
+    free(commands);
+}
+
+void test_complex_background_parsing_args_spaces(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | a & b - With args - With spaces");
+
+    commands = parse_read_line("   sleep  10   &     ls   ", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(2, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected_0 = parse_command("sleep 10");
+    expected_0->background = 1;
+    handle_command_call_test(commands[0], expected_0, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_0);
+    destroy_command_call(commands[0]);
+
+    command_call *expected_1 = parse_command("ls");
+    handle_command_call_test(commands[1], expected_1, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_1);
+    destroy_command_call(commands[1]);
+    free(commands);
+}
+
+void test_complex_background_parsing_args_no_spaces(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | a & b & - With args - No spaces");
+
+    commands = parse_read_line("sleep 666& ls&", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(2, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected_0 = parse_command("sleep 666");
+    expected_0->background = 1;
+    handle_command_call_test(commands[0], expected_0, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_0);
+    destroy_command_call(commands[0]);
+
+    command_call *expected_1 = parse_command("ls");
+    expected_1->background = 1;
+    handle_command_call_test(commands[1], expected_1, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_1);
+    destroy_command_call(commands[1]);
+    free(commands);
+}
+void test_complex_full_background_parsing_args_spaces(test_info *info) {
+    size_t total_commands = 0;
+    command_call **commands;
+
+    print_test_name("& Parsing | a & b & c & - With args - With spaces");
+
+    commands = parse_read_line("  sleep   1000d   &  ls   -l   -a  &   ", &total_commands);
+    handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
+    handle_int_test(2, total_commands, __LINE__, __FILE__, info);
+
+    command_call *expected_0 = parse_command("sleep 1000d");
+    expected_0->background = 1;
+    handle_command_call_test(commands[0], expected_0, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_0);
+    destroy_command_call(commands[0]);
+
+    command_call *expected_1 = parse_command("ls -l   -a");
+    expected_1->background = 1;
+    handle_command_call_test(commands[1], expected_1, __LINE__, __FILE__, info);
+
+    destroy_command_call(expected_1);
+    destroy_command_call(commands[1]);
+    free(commands);
 }

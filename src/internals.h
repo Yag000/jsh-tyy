@@ -14,6 +14,9 @@ extern char lwd[PATH_MAX];
 /** Separator used to split commands. In our case a single space character. */
 extern const char *COMMAND_SEPARATOR;
 
+/** Indicator of a background execution. */
+extern const char *BACKGROUND_FLAG;
+
 /** 1 if the shell should exit, 0 otherwise. */
 extern int should_exit;
 

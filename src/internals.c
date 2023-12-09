@@ -15,6 +15,7 @@
 int last_exit_code;
 char lwd[PATH_MAX];
 const char *COMMAND_SEPARATOR = " ";
+const char *BACKGROUND_FLAG = "&";
 const size_t LIMIT_PROMPT_SIZE = 30;
 
 int should_exit;
