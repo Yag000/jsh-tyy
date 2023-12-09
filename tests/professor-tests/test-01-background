@@ -1,0 +1,3 @@
+#IGNORE CWD
+$ ls -l & pwd
+$ exit 0
