@@ -20,6 +20,7 @@ TEST_SCRIPT=$(SCRIPTSDIR)/test.sh
 TEST_SETUP=$(SCRIPTSDIR)/test_setup.sh
 TEST_VALGRIND=$(SCRIPTSDIR)/test_valgrind.sh
 TEST_PROFESSOR=$(SCRIPTSDIR)/test_professor.sh
+MILESTONE_PREP_TESTS=$(SCRIPTSDIR)/manage_file_tests.sh
 
 
 SRCFILES := $(shell find $(SRCDIR) -type f -name "*.c")
@@ -55,8 +56,11 @@ test-unit: compile_tests setup_test_env
 test-valgrind: compile_tests_valgrind setup_test_env
 	./$(TEST_VALGRIND)
 
-test-professor: 
+test-professor:
 	./$(TEST_PROFESSOR)
+
+test-tyy:
+	./$(MILESTONE_PREP_TESTS) $(TEST_PROFESSOR)
 
 compile_tests_valgrind: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES)
 	$(CC) -o $(TEST) $^ -g $(CFLAGS)
