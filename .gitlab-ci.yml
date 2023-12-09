@@ -31,32 +31,26 @@ test_unit:
 # run the tests with valgrind
 # to check for memory leaks
 memory_leaks:
-  image: gcc:latest
+  image: yag000/c_tools:latest
   stage: test
 
   dependencies:
     - build
 
   script:
-    - echo "Install valgrind"
-    - apt-get update -y
-    - apt-get install -y valgrind
     - echo "Run the tests with valgrind"
     - make test-valgrind
 
-# run the tests provided by our 
+# run the tests provided by our
 # professors
 test_professor:
-  image: gcc:latest
+  image: yag000/c_tools:latest
   stage: test
 
   dependencies:
     - build
 
   script:
-    - echo "Install valgrind"
-    - apt-get update -y
-    - apt-get install -y valgrind
     - echo "Run professors tests"
     - make test-professor
 
@@ -64,16 +58,9 @@ test_professor:
 #
 # check the code Format
 format:
-  image: debian:bookworm-slim
+  image: yag000/c_tools:latest
   stage: format
 
   script:
-    - echo "Install clang-format"
-    - apt-get update -y
-    - apt-get install -y clang-format
-    - echo "Print clang-format version"
-    - clang-format --version
-    - echo "Install make"
-    - apt-get install -y make
     - echo "Check the code format"
     - make check-format
