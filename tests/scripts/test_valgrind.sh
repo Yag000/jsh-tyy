@@ -13,7 +13,7 @@ echo "-> Running valgrind..."
 echo 
 
 
-$VALGRIND $VALGRIND_OPTS $TEST 2> $LOG_FILE
+$VALGRIND $VALGRIND_OPTS $TEST $@ 2> $LOG_FILE
 
 if [ $? -eq 0 ]; then
     echo

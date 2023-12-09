@@ -71,4 +71,16 @@ int remove_job(size_t);
 /** Destroys the job table. */
 void destroy_job_table();
 
+/** Updates the jobs in the job table and prints the ones that
+ *  have finished.
+ */
+void update_jobs();
+
+/** Return 1 if there are jobs running or stopped, 0 otherwise.
+ * It looks the last status of the jobs in the job table, so it
+ * could not be accurate, should be used after a call to `update_jobs`
+ * for accurate results.
+ * */
+int are_jobs_running();
+
 #endif // JOBS_H

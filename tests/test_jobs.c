@@ -1,3 +1,9 @@
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "../src/jobs.h"
 #include "test_core.h"
 #include "utils.h"
