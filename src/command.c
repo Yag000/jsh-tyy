@@ -96,9 +96,9 @@ command_call *parse_command(char *command_string) {
         return NULL;
     }
 
-    parsed_command_string = realloc(parsed_command_string, sizeof(char *) * (argc + 1));
+    parsed_command_string = reallocarray(parsed_command_string, argc + 1, sizeof(char *));
     if (parsed_command_string == NULL) {
-        perror("realloc");
+        perror("reallocarray");
         return NULL;
     }
     parsed_command_string[argc] = NULL;
@@ -119,6 +119,7 @@ command_call **parse_read_line(char *command_string, size_t *total_commands) {
     int last_background_command_index = -1;
     char **bg_flag_parsed =
         split_string_keep_trace(command_string, BACKGROUND_FLAG, total_commands, &last_background_command_index);
+
     if (bg_flag_parsed == NULL) {
         return NULL;
     }
@@ -171,5 +172,17 @@ command_call **parse_read_line(char *command_string, size_t *total_commands) {
         return commands;
     }
 
-    return reallocarray(commands, --*total_commands, sizeof(command_call));
+    if (*total_commands == 1) {
+        free(commands);
+        return NULL;
+    }
+
+    commands = reallocarray(commands, --*total_commands, sizeof(command_call));
+
+    if (commands == NULL) {
+        perror("reallocarray");
+        return NULL;
+    }
+
+    return commands;
 }
