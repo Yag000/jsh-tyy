@@ -33,7 +33,6 @@ test_info *test_external_commands() {
 static void test_case_successful_command(test_info *info) {
     command_call *command;
     command_result *command_result;
-    size_t total_command = 0;
 
     print_test_name("Testing successful external command");
 
@@ -48,7 +47,6 @@ static void test_case_successful_command(test_info *info) {
 static void test_case_unsuccessful_command(test_info *info) {
     command_call *command;
     command_result *command_result;
-    size_t total_command = 0;
 
     print_test_name("Testing unsuccessful external command");
 
@@ -63,7 +61,6 @@ static void test_case_unsuccessful_command(test_info *info) {
 static void test_case_non_existent_command(test_info *info) {
     command_call *command;
     command_result *command_result;
-    size_t total_command = 0;
 
     print_test_name("Testing non existent external command");
 
@@ -81,7 +78,6 @@ static void test_case_non_existent_command(test_info *info) {
 static void test_case_existent_file_command(test_info *info) {
     command_call *command;
     command_result *command_result;
-    size_t total_command = 0;
 
     print_test_name("Testing existent file external command");
 
@@ -103,7 +99,6 @@ static void test_case_existent_file_command(test_info *info) {
 static void test_case_non_existent_file_command(test_info *info) {
     command_call *command;
     command_result *command_result;
-    size_t total_command = 0;
 
     print_test_name("Testing non existent file external command");
 

@@ -12,6 +12,7 @@ static void test_case_next_word(test_info *info);
 static void test_case_split_string(test_info *info);
 static void test_case_join_string(test_info *info);
 static void test_case_trunc_start(test_info *info);
+static void test_case_split_string_keep_trace(test_info *info);
 
 test_info *test_string_utils() {
     // Test setup
@@ -28,6 +29,7 @@ test_info *test_string_utils() {
     test_case_split_string(info);
     test_case_join_string(info);
     test_case_trunc_start(info);
+    test_case_split_string_keep_trace(info);
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
@@ -251,6 +253,14 @@ static void test_case_split_string(test_info *info) {
     handle_int_test(0, size, __LINE__, __FILE__, info);
     handle_null_test(result, __LINE__, __FILE__, info);
 
+    // No separator
+    result = split_string("word", " ", &size);
+    handle_int_test(1, size, __LINE__, __FILE__, info);
+    handle_boolean_test(false, result == NULL, __LINE__, __FILE__, info);
+    handle_string_test("word", result[0], __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result);
+
     // Simple sentence
     result = split_string("this is a sentence", " ", &size);
     handle_int_test(4, size, __LINE__, __FILE__, info);
@@ -385,5 +395,79 @@ static void test_case_trunc_start(test_info *info) {
 
     result = trunc_start("9876543210", 2);
     handle_string_test("10", result, __LINE__, __FILE__, info);
+    free(result);
+}
+
+static void test_case_split_string_keep_trace(test_info *info) {
+    char **result;
+    size_t size;
+    int last_index;
+
+    print_test_name("Testing `split_string_keep_trace`");
+
+    // Empty string
+    result = split_string_keep_trace("", "&", &size, &last_index);
+    handle_int_test(0, size, __LINE__, __FILE__, info);
+    handle_int_test(-1, last_index, __LINE__, __FILE__, info);
+    free(result);
+
+    // Only separator
+    result = split_string_keep_trace("&&&&", "&", &size, &last_index);
+    handle_int_test(0, size, __LINE__, __FILE__, info);
+    handle_int_test(-1, last_index, __LINE__, __FILE__, info);
+    free(result);
+
+    // Single word
+    result = split_string_keep_trace("word", "&", &size, &last_index);
+    handle_int_test(1, size, __LINE__, __FILE__, info);
+    handle_int_test(-1, last_index, __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result);
+    result = split_string_keep_trace("word&", "&", &size, &last_index);
+    handle_int_test(1, size, __LINE__, __FILE__, info);
+    handle_int_test(0, last_index, __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result);
+
+    // Multiple words
+    result = split_string_keep_trace("wordword", "&", &size, &last_index);
+    handle_int_test(1, size, __LINE__, __FILE__, info);
+    handle_int_test(-1, last_index, __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result);
+    result = split_string_keep_trace("word1 & word2", "&", &size, &last_index);
+    handle_int_test(2, size, __LINE__, __FILE__, info);
+    handle_int_test(0, last_index, __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result[1]);
+    free(result);
+    result = split_string_keep_trace("word1& word2&", "&", &size, &last_index);
+    handle_int_test(2, size, __LINE__, __FILE__, info);
+    handle_int_test(1, last_index, __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result[1]);
+    free(result);
+
+    // Multiple words | Repeating separator
+    result = split_string_keep_trace("word1&& word2", "&", &size, &last_index);
+    handle_int_test(2, size, __LINE__, __FILE__, info);
+    handle_int_test(0, last_index, __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result[1]);
+    free(result);
+    result = split_string_keep_trace("word1&& word2&", "&", &size, &last_index);
+    handle_int_test(2, size, __LINE__, __FILE__, info);
+    handle_int_test(1, last_index, __LINE__, __FILE__, info);
+    free(result[0]);
+    free(result[1]);
+    free(result);
+
+    // A little bit longer
+    result = split_string_keep_trace("a &&& b  &  c  &&&& d && e", "&", &size, &last_index);
+    handle_int_test(5, size, __LINE__, __FILE__, info);
+    handle_int_test(3, last_index, __LINE__, __FILE__, info);
+    for (size_t index = 0; index < size; ++index) {
+        free(result[index]);
+    }
     free(result);
 }

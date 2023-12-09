@@ -91,18 +91,23 @@ void prompt() {
 
         free(prompt_string);
 
-        command_call *command = parse_command(buf);
+        size_t total_commands = 0;
+        command_call **commands = parse_read_line(buf, &total_commands);
         command_result *command_result;
-        if (command != NULL) {
+        if (commands != NULL) {
             add_history(buf);
 
-            command_result = execute_command_call(command);
+            for (size_t index = 0; index < total_commands; ++index) {
 
-            if (command_result != NULL) {
-                destroy_command_result(command_result);
-            } else {
-                destroy_command_call(command);
+                command_result = execute_command_call(commands[index]);
+
+                if (command_result != NULL) {
+                    destroy_command_result(command_result);
+                } else {
+                    destroy_command_call(commands[index]);
+                }
             }
+            free(commands);
         }
         free(buf);
     }
