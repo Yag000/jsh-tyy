@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VALGRIND="valgrind"
-VALGRIND_OPTS="--leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=1"
+VALGRIND_OPTS="--leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=1 -s"
 TEST="./test"
 TMP_DIR="/tmp"
 LOG_FILE="$TMP_DIR/valgrind.log"
@@ -19,6 +19,8 @@ if [ $? -eq 0 ]; then
     echo
     echo "Valgrind passed!"
     echo
+    echo "====================="
+    echo
     exit 0
 else
     echo
@@ -27,6 +29,7 @@ else
     cat $LOG_FILE
     echo
     echo "====================="
+    echo
     exit 1
 fi
 
