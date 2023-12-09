@@ -16,7 +16,7 @@ echo
 echo "--> Executing tests..."
 echo
 
-./test || test_passed=1
+./test $@ || test_passed=1
 
 echo 
 echo "====================="

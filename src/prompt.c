@@ -82,6 +82,8 @@ void prompt() {
     rl_outstream = stderr;
 
     while (!should_exit) {
+        update_jobs();
+
         char *prompt_string = get_prompt_string();
         char *buf = readline(prompt_string);
 

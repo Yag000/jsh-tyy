@@ -8,6 +8,7 @@
 #include <time.h>
 
 extern bool debug;
+extern bool allow_slow;
 
 /** Structure to hold test information. */
 typedef struct test_info {
@@ -48,5 +49,6 @@ test_info *test_external_commands();
 test_info *test_jobs();
 test_info *test_prompt();
 test_info *test_background_jobs();
+test_info *test_running_jobs();
 
 #endif // TEST_CORE_H

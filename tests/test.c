@@ -7,6 +7,7 @@
 #include "test_core.h"
 
 bool debug;
+bool allow_slow = true;
 
 static void update_test_info(test_info *, test_info *);
 
@@ -14,9 +15,15 @@ static void update_test_info(test_info *, test_info *);
  * called from here and the results will be printed.
  */
 int main(int argc, char *argv[]) {
-    if (argc > 1 && strcmp(argv[1], "-v") == 0) {
-        debug = true;
-        printf("Debug mode enabled\n");
+    if (argc > 1) {
+        for (int i = 1; i < argc; i++) {
+            if (strcmp(argv[i], "-v") == 0) {
+                debug = true;
+            }
+            if (strcmp(argv[i], "-q") == 0) {
+                allow_slow = false;
+            }
+        }
     }
 
     // Create the test info
@@ -32,6 +39,7 @@ int main(int argc, char *argv[]) {
     update_test_info(info, test_exit());
     update_test_info(info, test_external_commands());
     update_test_info(info, test_jobs());
+    update_test_info(info, test_running_jobs());
     update_test_info(info, test_prompt());
     update_test_info(info, test_background_jobs());
 

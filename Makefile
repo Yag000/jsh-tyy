@@ -22,7 +22,6 @@ TEST_VALGRIND=$(SCRIPTSDIR)/test_valgrind.sh
 TEST_PROFESSOR=$(SCRIPTSDIR)/test_professor.sh
 MILESTONE_PREP_TESTS=$(SCRIPTSDIR)/manage_file_tests.sh
 
-
 SRCFILES := $(shell find $(SRCDIR) -type f -name "*.c")
 TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c")
 
@@ -47,6 +46,14 @@ all: $(EXEC)
 
 $(EXEC): $(OBJFILES) 
 	$(CC) -o $@ $^ $(CFLAGS)
+
+test-quick: test-unit-quick test-valgrind-quick test-professor
+
+test-unit-quick: compile_tests
+	./$(TEST_SCRIPT) -q
+
+test-valgrind-quick: compile_tests_valgrind
+	./$(TEST_VALGRIND) -q
 
 $(TEST): test-unit test-valgrind test-professor
 
