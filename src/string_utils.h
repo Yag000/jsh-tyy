@@ -42,6 +42,14 @@ int get_number_of_words_left(const string_iterator *);
  */
 char **split_string(char *, const char *, size_t *);
 
+/**
+ * Splits a string by a delimiter. Returns an array of string and sets `size` to it's length.
+ * `last` will be set to the index of the last item that was preceded by the delimiter. In particular,
+ * if the string ends by the delimiter then `last` = `size - 1`. If no delimiter is present,
+ * `last` is set to `-1`.
+ */
+char **split_string_keep_trace(char *string, const char *delimiter, size_t *size, int *last);
+
 /** Returns a new string that is the concatenation of the strings in the array
  * separated by the separator.
  */

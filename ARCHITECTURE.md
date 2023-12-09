@@ -15,5 +15,5 @@
 
 ## Algorithmes
 
-- String Parsing
+- String Parsing | & Parsing
 - Ajout des jobs à la job_table + suppression

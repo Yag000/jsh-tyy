@@ -110,15 +110,66 @@ command_call *parse_command(char *command_string) {
 
 command_call **parse_read_line(char *command_string, size_t *total_commands) {
 
-    /* TODO : Parse readlines into multiples commands */
+    if (starts_with(command_string, BACKGROUND_FLAG)) {
+        *total_commands = 0;
+        return NULL;
+    }
 
-    *total_commands = 1;
+    // Split with BACKGROUND_FLAG
+    int last_background_command_index = -1;
+    char **bg_flag_parsed =
+        split_string_keep_trace(command_string, BACKGROUND_FLAG, total_commands, &last_background_command_index);
+    if (bg_flag_parsed == NULL) {
+        return NULL;
+    }
 
     command_call **commands = malloc(*total_commands * sizeof(command_call));
     if (commands == NULL) {
         perror("malloc");
+        for (size_t index = 0; index < *total_commands; ++index) {
+            free(bg_flag_parsed[index]);
+        }
+        free(bg_flag_parsed);
         return NULL;
     }
 
-    return commands;
+    // Parse each command
+    int abort = 0, trim_last = 0;
+    for (size_t index = 0; index < *total_commands; ++index) {
+        commands[index] = NULL;
+        if (!abort) {
+            commands[index] = parse_command(bg_flag_parsed[index]);
+
+            if (commands[index] == NULL) {
+                if (index == *total_commands - 1) {
+                    trim_last = 1;
+                } else {
+                    abort = 1;
+                }
+            } else {
+                if ((int)((ssize_t)index) <= last_background_command_index) {
+                    commands[index]->background = 1;
+                }
+            }
+        }
+    }
+
+    for (size_t index = 0; index < *total_commands; ++index) {
+        free(bg_flag_parsed[index]);
+    }
+    free(bg_flag_parsed);
+
+    if (abort) {
+        for (size_t to_free = 0; to_free < *total_commands; ++to_free) {
+            free(commands[to_free]);
+        }
+        free(commands);
+        return NULL;
+    }
+
+    if (!trim_last) {
+        return commands;
+    }
+
+    return reallocarray(commands, --*total_commands, sizeof(command_call));
 }

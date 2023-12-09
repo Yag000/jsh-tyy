@@ -133,6 +133,33 @@ char **split_string(char *string, const char *delimiter, size_t *size) {
     return tokens;
 }
 
+char **split_string_keep_trace(char *string, const char *delimiter, size_t *size, int *last) {
+    string_iterator *iterator = new_string_iterator(string, delimiter);
+    int number_of_tokens = get_number_of_words_left(iterator);
+    *size = number_of_tokens;
+    *last = -1;
+
+    if (number_of_tokens == 0) {
+        destroy_string_iterator(iterator);
+        return NULL;
+    }
+
+    char **tokens = malloc(sizeof(char *) * number_of_tokens);
+    if (tokens == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    while (has_next_word(iterator)) {
+        tokens[iterator->index] = next_word(iterator);
+        *last += starts_with(iterator->string, delimiter);
+    }
+
+    destroy_string_iterator(iterator);
+
+    return tokens;
+}
+
 /** Returns a new string that is the concatenation of the strings in the array
  * separated by the separator.
  */
