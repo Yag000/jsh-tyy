@@ -1,9 +1,11 @@
-#include "jobs.h"
-#include "command.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 #include <unistd.h>
+
+#include "command.h"
+#include "jobs.h"
 
 void destroy_job_table();
 
@@ -56,6 +58,13 @@ void print_job(job *j) {
     dprintf(STDOUT_FILENO, "[%ld]\t%d\t%s\t", j->id, j->pid, job_status_to_string(j->last_status));
     command_call_print(j->command);
     dprintf(STDOUT_FILENO, "\n");
+}
+
+void eprint_job(job *j) {
+    int current_stdout = dup(STDOUT_FILENO);
+    dup2(STDERR_FILENO, STDOUT_FILENO);
+    print_job(j);
+    dup2(current_stdout, STDOUT_FILENO);
 }
 
 void init_job_table() {
@@ -126,4 +135,62 @@ int remove_job(size_t id) {
     job_table_size--;
 
     return 0;
+}
+
+job_status job_status_from_int(int status) {
+    // What to do with detached jobs?
+    if WIFEXITED (status) {
+        return DONE;
+    } else if WIFSTOPPED (status) {
+        return STOPPED;
+    } else if WIFSIGNALED (status) {
+        return KILLED;
+    }
+
+    return RUNNING;
+}
+
+job_status get_job_status(int pid) {
+    int status;
+
+    int pid_ = waitpid(pid, &status, WNOHANG | WCONTINUED | WUNTRACED);
+    if (pid_ < 0) {
+        printf("pid: %d\n", pid);
+        perror("waitpid");
+        return -1;
+    }
+
+    if (pid_ == 0) {
+        return RUNNING;
+    }
+
+    return job_status_from_int(status);
+}
+
+int are_jobs_running() {
+    for (size_t i = 0; i < job_table_capacity; i++) {
+        if (job_table[i] != NULL) {
+            if (job_table[i]->last_status == RUNNING || job_table[i]->last_status == STOPPED) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+void update_jobs() {
+    for (size_t i = 0; i < job_table_capacity; i++) {
+        if (job_table[i] != NULL) {
+            job_status status = get_job_status(job_table[i]->pid);
+            if (job_table[i]->last_status != status) {
+                job_table[i]->last_status = status;
+                if (job_table[i]->type == BACKGROUND) {
+                    eprint_job(job_table[i]);
+                }
+            }
+            if (status == DONE || status == KILLED) {
+                remove_job(job_table[i]->id);
+            }
+        }
+    }
 }
