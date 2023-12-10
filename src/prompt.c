@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 char *get_prompt_string() {
     char *total_jobs = malloc(1024 * sizeof(char));
@@ -88,7 +89,13 @@ void prompt() {
         char *buf = readline(prompt_string);
 
         if (buf == NULL) {
-            return;
+            buf = malloc((strlen("exit") + 1) * sizeof(char));
+            if (buf == NULL) {
+                perror("malloc");
+                return;
+            }
+
+            memmove(buf, "exit", strlen("exit") + 1);
         }
 
         free(prompt_string);
