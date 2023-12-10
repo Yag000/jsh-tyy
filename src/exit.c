@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "command.h"
 #include "internals.h"
+#include "jobs.h"
 
 int exit_command(command_call *command_call) {
-    /** TODO: Handle jobs running in the background */
 
     if (command_call == NULL) {
         return 1;
@@ -13,6 +14,17 @@ int exit_command(command_call *command_call) {
 
     if (command_call->argc > 2) {
         dprintf(command_call->stderr, "exit: too many arguments\n");
+        return 1;
+    }
+
+    update_jobs();
+    /* This function call is controversial and needs to be addressed.
+     * There's no explicit instruction regarding the update of jobs
+     * except right before the prompt.
+     */
+
+    if (are_jobs_running() > 0) {
+        dprintf(command_call->stderr, "jsh: you have running jobs.\n");
         return 1;
     }
 
