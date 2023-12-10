@@ -11,4 +11,6 @@ void handle_command_result_test(command_result *actual, command_result *expected
                                 test_info *info);
 void handle_job_test(job *actual, job *expected, int line, const char *file, test_info *info);
 
+void helper_mute_update_jobs(char *file_name);
+
 #endif // UTILS_H

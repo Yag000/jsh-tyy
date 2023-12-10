@@ -37,6 +37,8 @@ void handle_null_test(void *actual, int line, const char *file, test_info *info)
 int open_test_file_to_read(const char *);
 int open_test_file_to_write(const char *);
 
+void helper_mute_update_jobs(char *file_name);
+
 // All the tests
 test_info *test_command();
 test_info *test_cd();
