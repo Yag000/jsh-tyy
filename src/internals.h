@@ -67,4 +67,9 @@ int pwd(command_call *command_call);
  * */
 int exit_command(command_call *command_call);
 
+/**
+ * Prints the list of jobs to STDOUT_FILENO.
+ */
+int jobs_command(command_call *command_call);
+
 #endif // INTERNALS_H
