@@ -194,3 +194,22 @@ void update_jobs() {
         }
     }
 }
+
+int jobs_command(command_call *command_call) {
+
+    // TODO: Implement remaining functionalities
+
+    // TODO: Delete this when the full functionalities will be implemented
+    if (command_call->argc > 1) {
+        dprintf(command_call->stderr, "jobs: too many arguments\n");
+        return 1;
+    }
+
+    for (size_t i = 0; i < job_table_capacity; i++) {
+        if (job_table[i] != NULL) {
+            print_job(job_table[i]);
+        }
+    }
+
+    return 0;
+}

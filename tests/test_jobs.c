@@ -2,8 +2,10 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
+#include "../src/internals.h"
 #include "../src/jobs.h"
 #include "test_core.h"
 #include "utils.h"
@@ -29,6 +31,9 @@ void remove_job_2_with_3_jobs(test_info *);
 
 void test_case_add_job_fills_null_position(test_info *);
 void test_case_filling_job_table_after_deleting_it(test_info *);
+
+void test_jobs_command_without_jobs_running(test_info *);
+void test_jobs_command_with_jobs_running(test_info *);
 
 test_info *test_jobs() {
 
@@ -59,6 +64,9 @@ test_info *test_jobs() {
 
     test_case_add_job_fills_null_position(info);
     test_case_filling_job_table_after_deleting_it(info);
+
+    test_jobs_command_without_jobs_running(info);
+    test_jobs_command_with_jobs_running(info);
 
     // End of tests
     init_job_table();
@@ -478,5 +486,88 @@ void test_case_filling_job_table_after_deleting_it(test_info *info) {
 
     free(buffer);
 
+    init_job_table();
+}
+
+void test_jobs_command_without_jobs_running(test_info *info) {
+    print_test_name("Testing jobs command - without jobs running");
+
+    init_job_table();
+
+    int fd = open_test_file_to_write("test_jobs_command_without_jobs_running.log");
+
+    int current_stdout = dup(STDOUT_FILENO);
+
+    dup2(fd, STDOUT_FILENO);
+
+    command_call *command = parse_command("jobs");
+    command_result *result = execute_command_call(command);
+
+    dup2(current_stdout, STDOUT_FILENO);
+
+    close(fd);
+
+    fd = open_test_file_to_read("test_jobs_command_without_jobs_running.log");
+
+    char buffer[1024];
+    int nb = read(fd, buffer, 1024);
+    close(fd);
+
+    handle_int_test(0, nb, __LINE__, __FILE__, info);
+
+    destroy_command_result(result);
+    init_job_table();
+}
+
+void test_jobs_command_with_jobs_running(test_info *info) {
+    print_test_name("Testing jobs command - with jobs running");
+
+    init_job_table();
+
+    int fd = open_test_file_to_write("test_jobs_command_with_jobs_running.log");
+
+    // Init the expected string
+    char *expected = calloc(1024 * INITIAL_JOB_TABLE_CAPACITY, sizeof(char));
+    char *line = calloc(1024, sizeof(char));
+
+    // Create and add jobs
+    char *command_buffer = malloc(1024);
+    for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
+        sprintf(command_buffer, "pwd %zu", i);
+
+        command_call *command = parse_command(command_buffer);
+        job *job = new_job(command, 100 + i, RUNNING, BACKGROUND);
+        add_job(job);
+
+        // Build the expected string
+        sprintf(line, "[%ld]\t%d\t%s\t", job->id, job->pid, job_status_to_string(job->last_status));
+        strcat(expected, line);
+        strcat(expected, command_buffer);
+        strcat(expected, "\n");
+    }
+
+    int current_stdout = dup(STDOUT_FILENO);
+
+    dup2(fd, STDOUT_FILENO);
+
+    command_call *command = parse_command("jobs");
+    command_result *result = execute_command_call(command);
+
+    dup2(current_stdout, STDOUT_FILENO);
+
+    close(fd);
+
+    fd = open_test_file_to_read("test_jobs_command_with_jobs_running.log");
+
+    char buffer[1024 * INITIAL_JOB_TABLE_CAPACITY];
+    read(fd, buffer, 1024 * INITIAL_JOB_TABLE_CAPACITY);
+    close(fd);
+    buffer[strlen(expected)] = '\0';
+    handle_string_test(buffer, expected, __LINE__, __FILE__, info);
+
+    free(expected);
+    free(line);
+    free(command_buffer);
+    destroy_command_result(result);
     init_job_table();
 }
