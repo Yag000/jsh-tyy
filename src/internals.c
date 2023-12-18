@@ -91,6 +91,8 @@ command_result *execute_external_command(command_call *command_call) {
     job *job = new_job(command_call, pid, RUNNING, BACKGROUND);
     int job_id = add_job(job);
 
+    print_job(job, STDERR_FILENO);
+
     command_result->job_id = job_id;
     command_result->pid = pid;
     command_result->exit_code = 0;

@@ -30,10 +30,10 @@ job *new_job(command_call *, pid_t, job_status, job_type);
  */
 void destroy_job(job *);
 
-/** Prints the job to stdout, following the format:
+/** Prints the job to `fd`, following the format:
  *  [id] pid status command
  */
-void print_job(job *);
+void print_job(job *, int fd);
 
 /** Original capacity of the job table. Every time the job table expands
  *  it will be expanded by this number */
