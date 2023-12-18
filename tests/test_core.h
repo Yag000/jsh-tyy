@@ -52,5 +52,6 @@ test_info *test_jobs();
 test_info *test_prompt();
 test_info *test_background_jobs();
 test_info *test_running_jobs();
+test_info *test_redirection();
 
 #endif // TEST_CORE_H

@@ -64,7 +64,6 @@ void test_exit_no_arguments_previous_command(test_info *info) {
     command->stderr = stderr_fd;
     result = execute_command_call(command);
     destroy_command_result(result);
-    close(stderr_fd);
 
     command = parse_command("exit");
     result = execute_command_call(command);
@@ -94,7 +93,6 @@ void test_exit_multiple_arguments(test_info *info) {
     handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(error_fd);
 }
 
 void test_exit_correct_argument(test_info *info) {
@@ -125,15 +123,15 @@ void test_exit_string_argument(test_info *info) {
     command_call *command;
     command_result *result;
 
-    int errorfd;
+    int error_fd;
     print_test_name("exit string argument");
 
     init_internals();
 
     command = parse_command("exit test");
 
-    errorfd = open_test_file_to_write("test_exit_string_argument.log");
-    command->stderr = errorfd;
+    error_fd = open_test_file_to_write("test_exit_string_argument.log");
+    command->stderr = error_fd;
     result = execute_command_call(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
@@ -141,22 +139,21 @@ void test_exit_string_argument(test_info *info) {
     handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(errorfd);
 }
 
 void test_exit_out_of_range_argument(test_info *info) {
     command_call *command;
     command_result *result;
 
-    int errorfd;
+    int error_fd;
     print_test_name("exit out of range argument: 256");
 
     init_internals();
 
     command = parse_command("exit 256");
 
-    errorfd = open_test_file_to_write("test_exit_out_of_range_argument_256.log");
-    command->stderr = errorfd;
+    error_fd = open_test_file_to_write("test_exit_out_of_range_argument_256.log");
+    command->stderr = error_fd;
     result = execute_command_call(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
@@ -164,13 +161,12 @@ void test_exit_out_of_range_argument(test_info *info) {
     handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(errorfd);
 
     print_test_name("exit out of range argument: -1");
     command = parse_command("exit -1");
 
-    errorfd = open_test_file_to_write("test_exit_out_of_range_argument_negative.log");
-    command->stderr = errorfd;
+    error_fd = open_test_file_to_write("test_exit_out_of_range_argument_negative.log");
+    command->stderr = error_fd;
     result = execute_command_call(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
@@ -178,7 +174,6 @@ void test_exit_out_of_range_argument(test_info *info) {
     handle_int_test(last_exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(errorfd);
 }
 
 void test_exit_with_running_jobs(test_info *info) {
@@ -220,5 +215,4 @@ void test_exit_with_running_jobs(test_info *info) {
     destroy_command_result(result_job);
     destroy_command_result(result_exit_fail);
     destroy_command_result(result_exit_success);
-    close(fd);
 }

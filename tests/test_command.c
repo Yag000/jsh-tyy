@@ -71,16 +71,15 @@ void test_no_arguments_command_call_print(test_info *info) {
     int fd = open_test_file_to_write("test_command_call_print.log");
 
     command_call *command = parse_command("pwd");
-
     command_call_print(command, fd);
 
     close(fd);
 
-    fd = open_test_file_to_read("test_command_call_print.log");
+    int read_fd = open_test_file_to_read("test_command_call_print.log");
     char buffer[4];
     buffer[3] = '\0';
-    read(fd, buffer, 3);
-    close(fd);
+    read(read_fd, buffer, 3);
+    close(read_fd);
 
     char *expected = "pwd";
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
@@ -91,20 +90,19 @@ void test_no_arguments_command_call_print(test_info *info) {
 void test_command_call_print_with_arguments(test_info *info) {
     print_test_name("Testing command print with arguments");
 
-    int fd;
-    fd = open_test_file_to_write("test_command_call_print.log");
-    command_call *command = parse_command("pwd test");
+    int fd = open_test_file_to_write("test_command_call_print.log");
 
+    command_call *command = parse_command("pwd test");
     command_call_print(command, fd);
 
     close(fd);
 
-    fd = open_test_file_to_read("test_command_call_print.log");
+    int read_fd = open_test_file_to_read("test_command_call_print.log");
     char buffer[9];
     buffer[8] = '\0';
 
-    read(fd, buffer, 8);
-    close(fd);
+    read(read_fd, buffer, 8);
+    close(read_fd);
 
     char *expected = "pwd test";
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
@@ -114,17 +112,16 @@ void test_command_call_print_with_arguments(test_info *info) {
     fd = open_test_file_to_write("test_command_call_print.log");
 
     command = parse_command("pwd test test2");
-
     command_call_print(command, fd);
 
     close(fd);
 
-    fd = open_test_file_to_read("test_command_call_print.log");
+    read_fd = open_test_file_to_read("test_command_call_print.log");
     char buffer2[15];
     buffer2[14] = '\0';
 
-    read(fd, buffer2, 14);
-    close(fd);
+    read(read_fd, buffer2, 14);
+    close(read_fd);
 
     expected = "pwd test test2";
     handle_string_test(buffer2, expected, __LINE__, __FILE__, info);

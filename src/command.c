@@ -9,6 +9,8 @@
 
 const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd", "?", "jobs", "fg", "bg", "kill"};
 
+const char redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT][3] = {">", "<", ">|", ">>", "2>", "2>|", "2>>"};
+
 /** Returns a new command call with the given name, argc and argv. */
 command_call *new_command_call(size_t argc, char **argv) {
 
@@ -22,21 +24,26 @@ command_call *new_command_call(size_t argc, char **argv) {
     command_call->argc = argc;
     command_call->argv = argv;
     command_call->background = 0;
-    command_call->stdin = 0;
-    command_call->stdout = 1;
-    command_call->stderr = 2;
+    command_call->stdin = STDIN_FILENO;
+    command_call->stdout = STDOUT_FILENO;
+    command_call->stderr = STDERR_FILENO;
     return command_call;
 }
 
-/** Frees the memory allocated for the command call. */
+/** Frees the memory allocated for the command call.
+ * Calls for `close_unused_file_descriptors`.
+ */
 void destroy_command_call(command_call *command_call) {
     if (command_call == NULL) {
         return;
     }
+
     for (size_t index = 0; index < command_call->argc; index++) {
         free(command_call->argv[index]);
     }
+
     free(command_call->argv);
+    close_unused_file_descriptors(command_call);
     free(command_call);
 }
 

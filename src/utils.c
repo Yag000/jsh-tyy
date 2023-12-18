@@ -24,6 +24,39 @@ char *truncated_cwd(size_t size_limit) {
     return trunc_cwd;
 }
 
+int add_set(int *set, size_t size, int value) {
+
+    for (size_t index = 0; index < size; ++index) {
+        if (set[index] < 0) {
+            set[index] = value;
+            return 0;
+        }
+        if (set[index] == value) {
+            return -1;
+        }
+    }
+    return -1;
+}
+
+int remove_set(int *set, size_t size, int value) {
+    for (size_t index = 0; index < size; ++index) {
+        if (set[index] == value) {
+            set[index] = -1;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int contains(int *set, size_t size, int value) {
+    for (size_t index = 0; index < size; ++index) {
+        if (set[index] == value) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 char *colored(char *color, char *string) {
 
     if (color == NULL || string == NULL) {

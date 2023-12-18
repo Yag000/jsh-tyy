@@ -112,6 +112,8 @@ static void test_case_non_existent_file_command(test_info *info) {
     handle_int_test(1, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 
+    bin_fd = open("/dev/null", O_WRONLY | O_TRUNC | O_CREAT, 0666);
+
     fflush(stdout);
     fflush(stderr);
     command = parse_command("./tmp/idonotexist");

@@ -171,7 +171,6 @@ static void test_cd_path_non_existent(test_info *info) {
     call_cd_non_existent->stderr = log_fd;
 
     int res = cd(call_cd_non_existent);
-    close(log_fd);
 
     destroy_command_call(call_cd_non_existent);
 
@@ -200,7 +199,6 @@ static void test_cd_path_is_not_dir(test_info *info) {
     call_cd_non_dir->stderr = log_fd;
 
     int res = cd(call_cd_non_dir);
-    close(log_fd);
 
     destroy_command_call(call_cd_non_dir);
 
@@ -230,7 +228,6 @@ static void test_cd_symlink(test_info *info) {
     call_cd_symlink->stderr = log_fd;
 
     int res = cd(call_cd_symlink);
-    close(log_fd);
 
     destroy_command_call(call_cd_symlink);
 

@@ -49,11 +49,14 @@ $(EXEC): $(OBJFILES)
 
 test-quick: test-unit-quick test-valgrind-quick test-professor
 
-test-unit-quick: compile_tests
+test-unit-quick: compile_tests setup_test_env
 	./$(TEST_SCRIPT) -q
 
-test-valgrind-quick: compile_tests_valgrind
+test-valgrind-quick: compile_tests_valgrind setup_test_env
 	./$(TEST_VALGRIND) -q
+
+test-valgrind-quick-fds: compile_tests_valgrind setup_test_env
+	./$(TEST_VALGRIND) -f -q
 
 $(TEST): test-unit test-valgrind test-professor
 
@@ -62,6 +65,9 @@ test-unit: compile_tests setup_test_env
 
 test-valgrind: compile_tests_valgrind setup_test_env
 	./$(TEST_VALGRIND)
+
+test-valgrind-fds: compile_tests_valgrind setup_test_env
+	./$(TEST_VALGRIND) -f
 
 test-professor:
 	./$(TEST_PROFESSOR)
