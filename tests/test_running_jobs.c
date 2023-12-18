@@ -7,6 +7,7 @@
 #include "../src/internals.h"
 #include "../src/jobs.h"
 #include "test_core.h"
+#include "utils.h"
 
 void test_case_are_jobs_running_no_jobs(test_info *);
 void test_case_are_jobs_running_one_job(test_info *);
@@ -49,13 +50,14 @@ void helper_mute_update_jobs(char *file_name) {
     dup2(fd, STDERR_FILENO);
     update_jobs();
     dup2(current_stderr, STDERR_FILENO);
+    close(current_stderr);
     close(fd);
 }
 
 command_result *helper_execute_bg(char *command) {
     command_call *command_call = parse_command(command);
     command_call->background = 1;
-    command_result *result = execute_command_call(command_call);
+    command_result *result = mute_command_execution(command_call);
     return result;
 }
 
@@ -95,8 +97,6 @@ void test_case_are_jobs_running_one_instant_job(test_info *info) {
 
     // Let the job finish
     sleep(1);
-
-    close(fd);
 
     helper_mute_update_jobs("test_running_jobs_one_instant_job.log");
 
