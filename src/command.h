@@ -31,8 +31,10 @@ command_call *new_command_call(size_t argc, char **argv);
 /** Frees the memory allocated for the command call. */
 void destroy_command_call(command_call *command_call);
 
-/** Prints the command call. */
-void command_call_print(command_call *command_call);
+/** Prints the command call to `fd`, following the format:
+ *  name argv[0] argv[1] ... argv[argc - 1]
+ */
+void command_call_print(command_call *command_call, int fd);
 
 /** Returns 1 if the command call is an internal command, 0 otherwise. */
 int is_internal_command(command_call *command_call);
