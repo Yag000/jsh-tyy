@@ -498,14 +498,14 @@ void test_jobs_command_without_jobs_running(test_info *info) {
     command_result *result = execute_command_call(command);
 
     dup2(current_stdout, STDOUT_FILENO);
-
+    close(current_stdout);
     close(fd);
 
-    fd = open_test_file_to_read("test_jobs_command_without_jobs_running.log");
+    int read_fd = open_test_file_to_read("test_jobs_command_without_jobs_running.log");
 
     char buffer[1024];
-    int nb = read(fd, buffer, 1024);
-    close(fd);
+    int nb = read(read_fd, buffer, 1024);
+    close(read_fd);
 
     handle_int_test(0, nb, __LINE__, __FILE__, info);
 
@@ -548,14 +548,14 @@ void test_jobs_command_with_jobs_running(test_info *info) {
     command_result *result = execute_command_call(command);
 
     dup2(current_stdout, STDOUT_FILENO);
-
+    close(current_stdout);
     close(fd);
 
-    fd = open_test_file_to_read("test_jobs_command_with_jobs_running.log");
+    int read_fd = open_test_file_to_read("test_jobs_command_with_jobs_running.log");
 
     char buffer[1024 * INITIAL_JOB_TABLE_CAPACITY];
-    read(fd, buffer, 1024 * INITIAL_JOB_TABLE_CAPACITY);
-    close(fd);
+    read(read_fd, buffer, 1024 * INITIAL_JOB_TABLE_CAPACITY);
+    close(read_fd);
     buffer[strlen(expected)] = '\0';
     handle_string_test(buffer, expected, __LINE__, __FILE__, info);
 

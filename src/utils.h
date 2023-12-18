@@ -11,6 +11,20 @@ char *get_current_wd();
  */
 char *truncated_cwd(size_t size_limit);
 
+/** Add a value to a set of determined size.
+ * An empty spot needs to be marked with a negative value.
+ * Returns 0 if `value` was correctly added, -1 otherwise.
+ */
+int add_set(int *set, size_t size, int value);
+
+/** Returns 1 if the set contains the value, 0 otherwise. */
+int contains(int *set, size_t size, int value);
+
+/** Removes `value` from the set.
+ * Returns 0 if `value` was properly removed, -1 otherwise.
+ */
+int remove_set(int *set, size_t size, int value);
+
 /**
  * Returns a new string starting with `\001` following by a color tag,
  * ending with `\002` and contains in its center the string passed in

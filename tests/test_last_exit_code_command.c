@@ -44,7 +44,6 @@ void test_invalid_arguments(test_info *info) {
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(error_fd);
 }
 
 void test_as_first_command(test_info *info) {
@@ -65,7 +64,6 @@ void test_as_first_command(test_info *info) {
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(out_fd);
 }
 
 void test_after_failed_command(test_info *info) {
@@ -85,7 +83,6 @@ void test_after_failed_command(test_info *info) {
     result = execute_command_call(command);
 
     destroy_command_result(result);
-    close(error_fd);
 
     command = parse_command("?");
     out_fd = open_test_file_to_write("test_last_exit_code_command_after_failed_command.log");
@@ -95,7 +92,6 @@ void test_after_failed_command(test_info *info) {
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(out_fd);
 
     int read_fd = open_test_file_to_read("test_last_exit_code_command_after_failed_command.log");
     char *error_code = malloc(2);
@@ -111,9 +107,8 @@ void test_after_successful_command(test_info *info) {
 
     command_result *result;
 
-    int out_fd;
     print_test_name("? command after successful command");
-    out_fd = open_test_file_to_write("test_last_exit_code_command_after_successful_command.log");
+    int out_fd = open_test_file_to_write("test_last_exit_code_command_after_successful_command.log");
 
     init_internals();
 
@@ -123,6 +118,8 @@ void test_after_successful_command(test_info *info) {
 
     destroy_command_result(result);
 
+    out_fd = open_test_file_to_write("test_last_exit_code_command_after_successful_command.log");
+
     command = parse_command("?");
     command->stdout = out_fd;
     result = execute_command_call(command);
@@ -130,7 +127,6 @@ void test_after_successful_command(test_info *info) {
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
-    close(out_fd);
 
     int read_fd = open_test_file_to_read("test_last_exit_code_command_after_successful_command.log");
     char *error_code = malloc(2);

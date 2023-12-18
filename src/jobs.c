@@ -81,6 +81,7 @@ void destroy_job_table() {
     }
     for (size_t i = 0; i < job_table_capacity; i++) {
         destroy_job(job_table[i]);
+        job_table[i] = NULL;
     }
     free(job_table);
 }

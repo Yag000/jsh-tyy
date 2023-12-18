@@ -8,11 +8,15 @@
 #include <string.h>
 #include <unistd.h>
 
+#define REDIRECTION_CARET_SYMBOLS_COUNT 7
 #define INTERNAL_COMMANDS_COUNT 8
 #define UNINITIALIZED_PID -2
 
 /** Array of internal command names. */
 extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
+
+/** Array of possible caret symbols. */
+extern const char redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT][3];
 
 /** Structure that represents a command call. */
 typedef struct command_call {
@@ -28,7 +32,9 @@ typedef struct command_call {
 /** Returns a new command call with the given name, argc and argv. */
 command_call *new_command_call(size_t argc, char **argv);
 
-/** Frees the memory allocated for the command call. */
+/** Frees the memory allocated for the command call.
+ * Calls for `close_unused_file_descriptors`.
+ */
 void destroy_command_call(command_call *command_call);
 
 /** Prints the command call to `fd`, following the format:

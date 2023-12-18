@@ -29,17 +29,12 @@ void test_launching_one_bg_job(test_info *info) {
 
     init_job_table();
 
-    int old_stdout = dup(STDOUT_FILENO);
     int fd = open_test_file_to_write("test_launching_one_bg_job.log");
-    dup2(fd, STDOUT_FILENO);
 
     command_call *command = parse_command("ls");
     command->background = 1;
+    command->stdout = fd;
     command_result *result = mute_command_execution(command);
-
-    dup2(old_stdout, STDOUT_FILENO);
-
-    close(fd);
 
     handle_boolean_test(result->pid > 0, true, __LINE__, __FILE__, info);
     handle_int_test(result->job_id, 1, __LINE__, __FILE__, info);
@@ -57,16 +52,13 @@ void test_launching_multiple_bg_jobs(test_info *info) {
 
     init_job_table();
 
-    int old_stdout = dup(STDOUT_FILENO);
     int fd = open_test_file_to_write("test_launching_multiple_bg_jobs.log");
 
     for (int i = 0; i < INITIAL_JOB_TABLE_CAPACITY + 2; i++) {
-        dup2(fd, STDOUT_FILENO);
         command_call *command = parse_command("ls");
         command->background = 1;
+        command->stdout = fd;
         command_result *result = mute_command_execution(command);
-
-        dup2(old_stdout, STDOUT_FILENO);
 
         handle_boolean_test(result->pid > 0, true, __LINE__, __FILE__, info);
         handle_int_test(result->job_id, i + 1, __LINE__, __FILE__, info);
@@ -76,8 +68,6 @@ void test_launching_multiple_bg_jobs(test_info *info) {
 
         destroy_command_result(result);
     }
-
-    close(fd);
 
     init_job_table();
 }

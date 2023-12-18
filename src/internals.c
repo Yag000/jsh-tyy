@@ -10,6 +10,7 @@
 #include "command.h"
 #include "internals.h"
 #include "jobs.h"
+#include "utils.h"
 
 int last_exit_code;
 char lwd[PATH_MAX];
@@ -71,6 +72,10 @@ command_result *execute_external_command(command_call *command_call) {
     pid = fork();
 
     if (pid == 0) {
+        dup2(command_call->stdin, STDIN_FILENO);
+        dup2(command_call->stdout, STDOUT_FILENO);
+        dup2(command_call->stderr, STDERR_FILENO);
+
         execvp(command_call->name, command_call->argv);
         dprintf(command_call->stderr, "jsh: %s: %s\n", command_call->name, strerror(errno));
         exit(1);
@@ -97,6 +102,7 @@ command_result *execute_external_command(command_call *command_call) {
     command_result->pid = pid;
     command_result->exit_code = 0;
     command_result->call = NULL;
+
     return command_result;
 }
 
@@ -105,4 +111,35 @@ void update_command_history(command_result *result) {
     if (result != NULL) {
         last_exit_code = result->exit_code;
     }
+}
+
+void close_unused_file_descriptors(command_call *command) {
+
+    if (command == NULL) {
+        return;
+    }
+
+    size_t nb_fds_to_close = 3;
+
+    int *fds_to_close = malloc(nb_fds_to_close * sizeof(int));
+    if (fds_to_close == NULL) {
+        perror("malloc");
+        return;
+    }
+
+    for (size_t index = 0; index < nb_fds_to_close; ++index) {
+        fds_to_close[index] = -1;
+    }
+
+    add_set(fds_to_close, nb_fds_to_close, command->stdin);
+    add_set(fds_to_close, nb_fds_to_close, command->stdout);
+    add_set(fds_to_close, nb_fds_to_close, command->stderr);
+
+    for (size_t index = 0; index < nb_fds_to_close; ++index) {
+        if (fds_to_close[index] > 2) {
+            close(fds_to_close[index]);
+        }
+    }
+
+    free(fds_to_close);
 }
