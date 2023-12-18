@@ -41,13 +41,13 @@ void destroy_command_call(command_call *command_call) {
 }
 
 /** Prints the command call. */
-void command_call_print(command_call *command_call) {
+void command_call_print(command_call *command_call, int fd) {
     size_t i;
     for (i = 0; i < command_call->argc; i++) {
         if (i == command_call->argc - 1) {
-            dprintf(STDOUT_FILENO, "%s", command_call->argv[i]);
+            dprintf(fd, "%s", command_call->argv[i]);
         } else {
-            dprintf(STDOUT_FILENO, "%s ", command_call->argv[i]);
+            dprintf(fd, "%s ", command_call->argv[i]);
         }
     }
 }

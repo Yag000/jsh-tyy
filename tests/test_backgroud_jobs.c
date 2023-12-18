@@ -35,7 +35,7 @@ void test_launching_one_bg_job(test_info *info) {
 
     command_call *command = parse_command("ls");
     command->background = 1;
-    command_result *result = execute_command_call(command);
+    command_result *result = mute_command_execution(command);
 
     dup2(old_stdout, STDOUT_FILENO);
 
@@ -64,7 +64,7 @@ void test_launching_multiple_bg_jobs(test_info *info) {
         dup2(fd, STDOUT_FILENO);
         command_call *command = parse_command("ls");
         command->background = 1;
-        command_result *result = execute_command_call(command);
+        command_result *result = mute_command_execution(command);
 
         dup2(old_stdout, STDOUT_FILENO);
 

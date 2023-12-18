@@ -1,6 +1,7 @@
 #include "../src/command.h"
 #include "../src/internals.h"
 #include "test_core.h"
+#include "utils.h"
 
 void test_exit_no_arguments_no_previous_command(test_info *);
 void test_exit_no_arguments_previous_command(test_info *);
@@ -194,7 +195,7 @@ void test_exit_with_running_jobs(test_info *info) {
     background_job->background = 1;
     background_job->stderr = fd;
 
-    command_result *result_job = execute_command_call(background_job);
+    command_result *result_job = mute_command_execution(background_job);
 
     command_call *exit_fail = parse_command("exit");
     exit_fail->stderr = fd;

@@ -54,17 +54,10 @@ void destroy_job(job *j) {
     free(j);
 }
 
-void print_job(job *j) {
-    dprintf(STDOUT_FILENO, "[%ld]\t%d\t%s\t", j->id, j->pid, job_status_to_string(j->last_status));
-    command_call_print(j->command);
-    dprintf(STDOUT_FILENO, "\n");
-}
-
-void eprint_job(job *j) {
-    int current_stdout = dup(STDOUT_FILENO);
-    dup2(STDERR_FILENO, STDOUT_FILENO);
-    print_job(j);
-    dup2(current_stdout, STDOUT_FILENO);
+void print_job(job *j, int fd) {
+    dprintf(fd, "[%ld]\t%d\t%s\t", j->id, j->pid, job_status_to_string(j->last_status));
+    command_call_print(j->command, fd);
+    dprintf(fd, "\n");
 }
 
 void init_job_table() {
@@ -185,7 +178,7 @@ void update_jobs() {
             if (job_table[i]->last_status != status) {
                 job_table[i]->last_status = status;
                 if (job_table[i]->type == BACKGROUND) {
-                    eprint_job(job_table[i]);
+                    print_job(job_table[i], STDERR_FILENO);
                 }
             }
             if (status == DONE || status == KILLED) {
@@ -207,7 +200,7 @@ int jobs_command(command_call *command_call) {
 
     for (size_t i = 0; i < job_table_capacity; i++) {
         if (job_table[i] != NULL) {
-            print_job(job_table[i]);
+            print_job(job_table[i], command_call->stdout);
         }
     }
 

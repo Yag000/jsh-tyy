@@ -2,7 +2,6 @@
 #include "test_core.h"
 #include "utils.h"
 #include <fcntl.h>
-#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <strings.h>
@@ -71,15 +70,9 @@ void test_no_arguments_command_call_print(test_info *info) {
 
     int fd = open_test_file_to_write("test_command_call_print.log");
 
-    int current_stdout = dup(STDOUT_FILENO);
-
-    dup2(fd, STDOUT_FILENO);
-
     command_call *command = parse_command("pwd");
 
-    command_call_print(command);
-
-    dup2(current_stdout, STDOUT_FILENO);
+    command_call_print(command, fd);
 
     close(fd);
 
@@ -100,14 +93,9 @@ void test_command_call_print_with_arguments(test_info *info) {
 
     int fd;
     fd = open_test_file_to_write("test_command_call_print.log");
-    int current_stdout = dup(STDOUT_FILENO);
-    dup2(fd, STDOUT_FILENO);
-
     command_call *command = parse_command("pwd test");
 
-    command_call_print(command);
-
-    dup2(current_stdout, STDOUT_FILENO);
+    command_call_print(command, fd);
 
     close(fd);
 
@@ -124,13 +112,10 @@ void test_command_call_print_with_arguments(test_info *info) {
     destroy_command_call(command);
 
     fd = open_test_file_to_write("test_command_call_print.log");
-    current_stdout = dup(STDOUT_FILENO);
-    dup2(fd, STDOUT_FILENO);
+
     command = parse_command("pwd test test2");
 
-    command_call_print(command);
-
-    dup2(current_stdout, STDOUT_FILENO);
+    command_call_print(command, fd);
 
     close(fd);
 

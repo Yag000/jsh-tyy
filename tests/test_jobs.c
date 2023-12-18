@@ -99,13 +99,7 @@ void test_case_print_job(test_info *info) {
 
     int fd = open_test_file_to_write("test_print_job.log");
 
-    int current_stdout = dup(STDOUT_FILENO);
-
-    dup2(fd, STDOUT_FILENO);
-
-    print_job(job);
-
-    dup2(current_stdout, STDOUT_FILENO);
+    print_job(job, fd);
 
     close(fd);
 
