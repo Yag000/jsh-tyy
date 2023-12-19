@@ -41,6 +41,18 @@ memory_leaks:
     - echo "Run the tests with valgrind"
     - make test-valgrind
 
+# runs our tests, using our professor's framework
+test_tyy:
+  image: yag000/c_tools:latest
+  stage: test
+
+  dependencies:
+    - build
+
+  script:
+    - echo "Run tyy tests"
+    - make test-tyy
+
 # run the tests provided by our
 # professors
 test_professor:
