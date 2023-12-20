@@ -3,3 +3,8 @@ obj/
 tmp/
 test
 .sy5-2023-2024-projet-jsh-autotests.nosync
+*.log
+
+# IDEs
+.vscode/
+.idea/
