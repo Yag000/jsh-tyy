@@ -58,6 +58,8 @@ command_result *execute_internal_command(command_call *command_call) {
         command_result->exit_code = pwd(command_call);
     } else if (strcmp(command_call->name, "jobs") == 0) {
         command_result->exit_code = jobs_command(command_call);
+    } else if (strcmp(command_call->name, "kill") == 0) {
+        command_result->exit_code = kill_command(command_call);
     }
 
     return command_result;
@@ -72,6 +74,10 @@ command_result *execute_external_command(command_call *command_call) {
     pid = fork();
 
     if (pid == 0) {
+        if ((setpgid(0, 0)) == -1) { // Create new group, different to its parent
+            perror("setpgid");
+            exit(1);
+        }
         dup2(command_call->stdin, STDIN_FILENO);
         dup2(command_call->stdout, STDOUT_FILENO);
         dup2(command_call->stderr, STDERR_FILENO);
