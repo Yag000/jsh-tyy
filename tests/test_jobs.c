@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -514,6 +515,10 @@ void test_jobs_command_without_jobs_running(test_info *info) {
 }
 
 void test_jobs_command_with_jobs_running(test_info *info) {
+    if (!allow_slow) {
+        return;
+    }
+
     print_test_name("Testing jobs command - with jobs running");
 
     init_job_table();
@@ -527,18 +532,25 @@ void test_jobs_command_with_jobs_running(test_info *info) {
     // Create and add jobs
     char *command_buffer = malloc(1024);
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
-        sprintf(command_buffer, "pwd %zu", i);
+        sprintf(command_buffer, "sleep %zu", i + 10);
 
         command_call *command = parse_command(command_buffer);
-        job *job = new_job(command, 100 + i, RUNNING, BACKGROUND);
-        add_job(job);
+        command->background = 1;
+        command_result *result = mute_command_execution(command);
+
+        job *job = job_table[result->job_id - 1];
 
         // Build the expected string
         sprintf(line, "[%ld]\t%d\t%s\t", job->id, job->pid, job_status_to_string(job->last_status));
         strcat(expected, line);
         strcat(expected, command_buffer);
         strcat(expected, "\n");
+
+        destroy_command_result(result);
     }
+
+    // Wait for the jobs to finish
+    sleep(1);
 
     int current_stdout = dup(STDOUT_FILENO);
 
@@ -563,5 +575,10 @@ void test_jobs_command_with_jobs_running(test_info *info) {
     free(line);
     free(command_buffer);
     destroy_command_result(result);
+
+    for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
+        kill(job_table[i]->pid, SIGKILL);
+    }
+
     init_job_table();
 }

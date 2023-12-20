@@ -172,14 +172,14 @@ int are_jobs_running() {
     return 0;
 }
 
-void update_jobs() {
+void fd_update_jobs(int fd) {
     for (size_t i = 0; i < job_table_capacity; i++) {
         if (job_table[i] != NULL) {
             job_status status = get_job_status(job_table[i]->pid);
             if (job_table[i]->last_status != status) {
                 job_table[i]->last_status = status;
                 if (job_table[i]->type == BACKGROUND) {
-                    print_job(job_table[i], STDERR_FILENO);
+                    print_job(job_table[i], fd);
                 }
             }
             if (status == DONE || status == KILLED) {
@@ -189,9 +189,15 @@ void update_jobs() {
     }
 }
 
+void update_jobs() {
+    fd_update_jobs(STDERR_FILENO);
+}
+
 int jobs_command(command_call *command_call) {
 
     // TODO: Implement remaining functionalities
+
+    fd_update_jobs(command_call->stdout);
 
     // TODO: Delete this when the full functionalities will be implemented
     if (command_call->argc > 1) {
