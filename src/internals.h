@@ -78,4 +78,11 @@ int exit_command(command_call *command_call);
  */
 int jobs_command(command_call *command_call);
 
+/**
+ * Sends a signal to a process or a job.
+ * Sends SIGTERM by default if no signal option is given.
+ *
+ */
+int kill_command(command_call *command_call);
+
 #endif // INTERNALS_H
