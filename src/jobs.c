@@ -137,6 +137,8 @@ job_status job_status_from_int(int status) {
         return DONE;
     } else if WIFSTOPPED (status) {
         return STOPPED;
+    } else if WIFCONTINUED (status) {
+        return RUNNING;
     } else if WIFSIGNALED (status) {
         return KILLED;
     }
@@ -144,21 +146,28 @@ job_status job_status_from_int(int status) {
     return RUNNING;
 }
 
-job_status get_job_status(int pid) {
+/**
+ * Updates the last status of the job with the given pid.
+ * If there is an error, -1 is returned.
+ * If the status of the job has not changed, 0 is returned.
+ * If the status of the job has changed, 1 is returned.
+ */
+int get_job_status(int pid, job_status *last_status) {
     int status;
 
-    int pid_ = waitpid(pid, &status, WNOHANG | WCONTINUED | WUNTRACED);
+    int pid_ = waitpid(pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
     if (pid_ < 0) {
-        printf("pid: %d\n", pid);
         perror("waitpid");
         return -1;
     }
 
     if (pid_ == 0) {
-        return RUNNING;
+        return 0;
     }
 
-    return job_status_from_int(status);
+    *last_status = job_status_from_int(status);
+
+    return 1;
 }
 
 int are_jobs_running() {
@@ -172,17 +181,34 @@ int are_jobs_running() {
     return 0;
 }
 
+/**
+ * Returns 1 if the job should be removed from the job table.
+ * Returns 0 otherwise.
+ */
+int should_remove_job(job_status status) {
+    if (status == DONE || status == KILLED || status == DETACHED) {
+        return 1;
+    }
+    return 0;
+}
+
 void fd_update_jobs(int fd) {
     for (size_t i = 0; i < job_table_capacity; i++) {
         if (job_table[i] != NULL) {
-            job_status status = get_job_status(job_table[i]->pid);
-            if (job_table[i]->last_status != status) {
-                job_table[i]->last_status = status;
+
+            int has_changed = get_job_status(job_table[i]->pid, &job_table[i]->last_status);
+
+            if (has_changed == -1) {
+                continue;
+            }
+
+            if (has_changed) {
                 if (job_table[i]->type == BACKGROUND) {
                     print_job(job_table[i], fd);
                 }
             }
-            if (status == DONE || status == KILLED) {
+
+            if (should_remove_job(job_table[i]->last_status)) {
                 remove_job(job_table[i]->id);
             }
         }

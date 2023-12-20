@@ -82,12 +82,24 @@ command_result *execute_external_command(command_call *command_call) {
     }
 
     if (command_call->background == 0) {
-        if (waitpid(pid, &status, 0) < 0) {
+        int pid_ = waitpid(pid, &status, WUNTRACED);
+        if (pid_ == -1) {
             perror("waitpid");
             exit(1);
         }
+
         if (WIFEXITED(status)) {
             command_result->exit_code = WEXITSTATUS(status);
+        } else if (WIFSTOPPED(status)) {
+            job *job = new_job(command_call, pid, STOPPED, BACKGROUND);
+            int job_id = add_job(job);
+
+            print_job(job, STDERR_FILENO);
+
+            command_result->job_id = job_id;
+            command_result->pid = pid;
+            command_result->exit_code = 0;
+            command_result->call = NULL;
         }
 
         return command_result;
