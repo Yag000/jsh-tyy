@@ -1,0 +1,16 @@
+$ echo Hello 2> output 2> output2 2> output3
+$ cat output
+$ cat output2
+$ cat output3
+$ rm output output2 output3
+$ echo Hello 2>> output 2>> output2 2>> output3
+$ cat output
+$ cat output2
+$ cat output3
+$ rm output output2 output3
+$ echo Hello 2>| output 2>| output2 2>| output3
+$ cat output
+$ cat output2
+$ cat output3
+$ rm output output2 output3
+$ exit 0

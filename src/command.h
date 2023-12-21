@@ -16,7 +16,7 @@
 extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
 
 /** Array of possible caret symbols. */
-extern const char redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT][3];
+extern const char *redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT];
 
 /** Structure that represents a command call. */
 typedef struct command_call {
@@ -45,6 +45,14 @@ void command_call_print(command_call *command_call, int fd);
 /** Returns 1 if the command call is an internal command, 0 otherwise. */
 int is_internal_command(command_call *command_call);
 
+/** Parse unique command string to `command_call`.
+ *  Returns `command_call` if correctly written, NULL otherwise.
+ *
+ *  Example :
+ *      -> "echo abcdefghijkl"
+ *      -> "cat >> output file0"
+ *      -> "sleep 1000 2>> error.log > random 2>| true_error.log"
+ */
 command_call *parse_command(char *command_string);
 
 /** Parses the command string and returns an array of command calls. */

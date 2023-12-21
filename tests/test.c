@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
 
     // Add tests here
     update_test_info(info, test_string_utils());
+    update_test_info(info, test_utils());
     update_test_info(info, test_command());
     update_test_info(info, test_cd());
     update_test_info(info, test_last_exit_code_command());
@@ -43,7 +44,7 @@ int main(int argc, char *argv[]) {
     update_test_info(info, test_prompt());
     update_test_info(info, test_background_jobs());
     update_test_info(info, test_redirection());
-    update_test_info(info, test_utils());
+    update_test_info(info, test_redirection_parsing());
 
     // End of tests
     clock_t end = clock();
