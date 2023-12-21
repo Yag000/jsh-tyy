@@ -15,7 +15,7 @@ const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd
 const char *redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT] = {">", "<", ">|", ">>", "2>", "2>|", "2>>"};
 
 /** Returns a new command call with the given name, argc and argv. */
-command_call *new_command_call(size_t argc, char **argv) {
+command_call *new_command_call(size_t argc, char **argv, char *command_string) {
 
     command_call *command_call = malloc(sizeof(*command_call));
     if (command_call == NULL) {
@@ -30,6 +30,14 @@ command_call *new_command_call(size_t argc, char **argv) {
     command_call->stdin = STDIN_FILENO;
     command_call->stdout = STDOUT_FILENO;
     command_call->stderr = STDERR_FILENO;
+
+    command_call->command_string = malloc((strlen(command_string) + 1) * sizeof(char));
+    if (command_string == NULL) {
+        return NULL;
+    }
+
+    memmove(command_call->command_string, command_string, (strlen(command_string) + 1) * sizeof(char));
+
     return command_call;
 }
 
@@ -46,20 +54,14 @@ void destroy_command_call(command_call *command_call) {
     }
 
     free(command_call->argv);
+    free(command_call->command_string);
     close_unused_file_descriptors(command_call);
     free(command_call);
 }
 
 /** Prints the command call. */
 void command_call_print(command_call *command_call, int fd) {
-    size_t i;
-    for (i = 0; i < command_call->argc; i++) {
-        if (i == command_call->argc - 1) {
-            dprintf(fd, "%s", command_call->argv[i]);
-        } else {
-            dprintf(fd, "%s ", command_call->argv[i]);
-        }
-    }
+    dprintf(fd, "%s", command_call->command_string);
 }
 
 int is_internal_command(command_call *command_call) {
@@ -189,6 +191,8 @@ command_call *parse_command(char *command_string) {
         return NULL;
     }
 
+    char *joined_string = join_strings(parsed_command_string, argc, " ");
+
     int fds[3];
 
     fds[0] = -1;
@@ -263,7 +267,8 @@ command_call *parse_command(char *command_string) {
 
     free(parsed_command_string);
 
-    command_call *command = new_command_call(not_null_arguments, redirection_parsed_command_string);
+    command_call *command = new_command_call(not_null_arguments, redirection_parsed_command_string, joined_string);
+    free(joined_string);
 
     if (fds[0] >= 0) {
         command->stdin = fds[0];
