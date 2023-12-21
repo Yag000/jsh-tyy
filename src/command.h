@@ -23,6 +23,7 @@ typedef struct command_call {
     char *name;
     size_t argc;
     char **argv;
+    char *command_string;
     int background; // 1 if the command is to be executed in background, 0 otherwise
     int stdin;
     int stdout;
@@ -30,7 +31,7 @@ typedef struct command_call {
 } command_call;
 
 /** Returns a new command call with the given name, argc and argv. */
-command_call *new_command_call(size_t argc, char **argv);
+command_call *new_command_call(size_t argc, char **argv, char *command_string);
 
 /** Frees the memory allocated for the command call.
  * Calls for `close_unused_file_descriptors`.
