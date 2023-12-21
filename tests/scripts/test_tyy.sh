@@ -24,8 +24,21 @@ fi
 
 mkdir -p ./tmp/PROFESSOR_TESTS_FILES
 
+REF=/ens/geoffroy/Public/sy5/2023-2024/jsh
+ON_LULU=false
+if [ -x "$REF" ]; then
+    ON_LULU=true
+fi
+
 mv ./$AUTOTEST_DIR/$TESTS_DIR/* ./tmp/PROFESSOR_TESTS_FILES
-cp -r $TYY_TEST ./$AUTOTEST_DIR/$TESTS_DIR/$TEST_DIR_NAME
+
+if [ $ON_LULU = "true" ]; then
+   for f in $(ls $TYY_TEST | grep -v "\-bash-only$"); do
+         cp -r $TYY_TEST/$f ./$AUTOTEST_DIR/$TESTS_DIR
+   done
+else 
+   cp -r $TYY_TEST/* ./$AUTOTEST_DIR/$TESTS_DIR/
+fi
 
 (
    cd "$AUTOTEST_DIR"
@@ -34,7 +47,7 @@ cp -r $TYY_TEST ./$AUTOTEST_DIR/$TESTS_DIR/$TEST_DIR_NAME
 
 result=$?
 
-rm -rf ./$AUTOTEST_DIR/$TESTS_DIR/$TEST_DIR_NAME
+rm -rf ./$AUTOTEST_DIR/$TESTS_DIR/*
 mv ./tmp/PROFESSOR_TESTS_FILES/* ./$AUTOTEST_DIR/$TESTS_DIR
 
 exit $result
