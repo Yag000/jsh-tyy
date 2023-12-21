@@ -1,0 +1,3 @@
+$ grep "*Lorem*" < loremipsum
+$ ?
+$ exit < fichier3

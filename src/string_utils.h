@@ -58,4 +58,6 @@ char *join_strings(char **, size_t, char *);
 /** Keep the last `to_keep` characters from a string. */
 char *trunc_start(char *str, size_t to_keep);
 
+int contains_string(const char *array[], size_t size, char *);
+
 #endif // STRING_UTILS_H

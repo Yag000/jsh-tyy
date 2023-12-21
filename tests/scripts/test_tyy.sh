@@ -4,7 +4,7 @@ AUTOTEST_GIT="https://gaufre.informatique.univ-paris-diderot.fr/geoffroy/sy5-202
 AUTOTEST_DIR=".sy5-2023-2024-projet-jsh-autotests.nosync"
 TESTS_DIR="test-files"
 TEST_DIR_NAME="tyy"
-TYY_TEST="$PWD/tests/professor-tests"
+TYY_TEST="$PWD/tests/tests-tyy"
 
 function help() {
     echo "Usage: $1"

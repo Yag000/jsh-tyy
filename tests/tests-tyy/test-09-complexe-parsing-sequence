@@ -1,0 +1,5 @@
+$ rm output0 output1 output2 2>| /dev/null
+$ echo > output0 > output1 abcdefghijkl > output2
+$ cat output0
+$ cat output1
+$ cat output2

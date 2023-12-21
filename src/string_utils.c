@@ -217,3 +217,12 @@ char *trunc_start(char *str, size_t to_keep) {
 
     return truncated;
 }
+
+int contains_string(const char *array[], size_t size, char *word) {
+    for (size_t index = 0; index < size; ++index) {
+        if (strcmp(array[index], word) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
