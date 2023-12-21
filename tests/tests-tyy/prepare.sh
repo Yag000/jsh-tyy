@@ -22,6 +22,7 @@ EOF
 cat > sprucetree.c <<"EOF"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int main(int argc, char **argv) {
 
@@ -30,6 +31,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    srand(time(NULL));
     int nb_rows = atoi(argv[1]);
 
     for (int row = 0; row < nb_rows; ++row) {
@@ -38,10 +40,44 @@ int main(int argc, char **argv) {
             printf(" ");
         }
         for (int star = 0; star < 2 * row + 1; ++star) {
+
+            if (row == 0) {
+                printf("\033[0;33m*");
+            } else if (rand() % 6 == 0) {
+                switch (rand() % 2) {
+                    case 0:
+                        printf("\033[0;31m*");
+                        break;
+                    case 1:
+                        printf("\033[0;34m*");
+                        break;
+                }
+            } else {
+                printf("\033[0;32m*");
+            }
+        }
+        printf("\n");
+    }
+
+    int trunk_width = nb_rows / 3;
+
+    trunk_width = trunk_width < 1 ? 1 : trunk_width;
+    trunk_width = trunk_width % 2 == 0 ? trunk_width + 1 : trunk_width;
+
+    int spaces = (nb_rows * 2 - trunk_width) / 2;
+
+    printf("\033[0;31m");
+    for (int trunk = 0; trunk < trunk_width; ++trunk) {
+
+        for (int space = 0; space < spaces; ++space) {
+            printf(" ");
+        }
+        for (int star = 0; star < trunk_width; ++star) {
             printf("*");
         }
         printf("\n");
     }
+    printf("\033[0m");
 
     return 0;
 }
