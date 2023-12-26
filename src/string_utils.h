@@ -58,6 +58,15 @@ char *join_strings(char **, size_t, char *);
 /** Keep the last `to_keep` characters from a string. */
 char *trunc_start(char *str, size_t to_keep);
 
-int contains_string(const char *array[], size_t size, char *);
+/** Returns 1 if the array of size `size` contains `word`, 0 otherwise. */
+int contains_string(const char *array[], size_t size, char *word);
+
+/**
+ * Returns a new string without the leading and trailing spaces.
+ * If the string is only made of spaces, returns an empty string.
+ * If the string is NULL, returns NULL.
+ * If the string is empty, returns an empty string.
+ */
+char *trim_spaces(const char *str);
 
 #endif // STRING_UTILS_H

@@ -191,8 +191,6 @@ command_call *parse_command(char *command_string) {
         return NULL;
     }
 
-    char *joined_string = join_strings(parsed_command_string, argc, " ");
-
     int fds[3];
 
     fds[0] = -1;
@@ -267,8 +265,10 @@ command_call *parse_command(char *command_string) {
 
     free(parsed_command_string);
 
-    command_call *command = new_command_call(not_null_arguments, redirection_parsed_command_string, joined_string);
-    free(joined_string);
+    char *trimmed_command_string = trim_spaces(command_string);
+    command_call *command =
+        new_command_call(not_null_arguments, redirection_parsed_command_string, trimmed_command_string);
+    free(trimmed_command_string);
 
     if (fds[0] >= 0) {
         command->stdin = fds[0];

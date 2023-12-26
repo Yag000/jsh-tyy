@@ -226,3 +226,63 @@ int contains_string(const char *array[], size_t size, char *word) {
     }
     return 0;
 }
+
+char *trim_spaces(const char *str) {
+    if (str == NULL) {
+        return NULL;
+    }
+
+    if (strlen(str) == 0) {
+        char *empty = malloc(sizeof(char));
+        if (empty == NULL) {
+            perror("malloc");
+            return NULL;
+        }
+
+        empty[0] = '\0';
+        return empty;
+    }
+
+    size_t trim_start_len = 0;
+    while (str[trim_start_len] == ' ') {
+        trim_start_len += 1;
+    }
+
+    size_t trim_end_len = 0;
+    while (str[strlen(str) - 1 - trim_end_len] == ' ') {
+        trim_end_len += 1;
+    }
+
+    if (trim_start_len == 0 && trim_end_len == 0) {
+        char *dup = strdup(str);
+        if (dup == NULL) {
+            perror("strdup");
+            return NULL;
+        }
+        return dup;
+    }
+
+    if (trim_start_len + trim_end_len >= strlen(str)) {
+        char *empty = malloc(sizeof(char));
+        if (empty == NULL) {
+            perror("malloc");
+            return NULL;
+        }
+
+        empty[0] = '\0';
+        return empty;
+    }
+
+    size_t new_len = strlen(str) - trim_start_len - trim_end_len;
+
+    char *trimmed = malloc((new_len + 1) * sizeof(char));
+    if (trimmed == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    memmove(trimmed, str + trim_start_len, new_len);
+    trimmed[new_len] = '\0';
+
+    return trimmed;
+}
