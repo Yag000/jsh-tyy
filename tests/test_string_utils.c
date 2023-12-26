@@ -14,6 +14,14 @@ static void test_case_join_string(test_info *info);
 static void test_case_trunc_start(test_info *info);
 static void test_case_split_string_keep_trace(test_info *info);
 
+void test_case_null_trim_spaces(test_info *info);
+void test_case_empty_trim_spaces(test_info *info);
+void test_case_only_whitespace_trim_spaces(test_info *info);
+void test_case_nothing_to_trim_trim_spaces(test_info *info);
+void test_case_trim_start_trim_spaces(test_info *info);
+void test_case_trim_end_trim_spaces(test_info *info);
+void test_case_trim_both_trim_spaces(test_info *info);
+
 test_info *test_string_utils() {
     // Test setup
     print_test_header("string_utils");
@@ -30,6 +38,13 @@ test_info *test_string_utils() {
     test_case_join_string(info);
     test_case_trunc_start(info);
     test_case_split_string_keep_trace(info);
+
+    test_case_null_trim_spaces(info);
+    test_case_empty_trim_spaces(info);
+    test_case_only_whitespace_trim_spaces(info);
+    test_case_trim_start_trim_spaces(info);
+    test_case_trim_end_trim_spaces(info);
+    test_case_trim_both_trim_spaces(info);
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
@@ -469,5 +484,102 @@ static void test_case_split_string_keep_trace(test_info *info) {
     for (size_t index = 0; index < size; ++index) {
         free(result[index]);
     }
+    free(result);
+}
+
+void test_case_null_trim_spaces(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trim_spaces` with NULL string");
+
+    result = trim_spaces(NULL);
+    handle_null_test(result, __LINE__, __FILE__, info);
+}
+
+void test_case_empty_trim_spaces(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trim_spaces` with empty string");
+
+    result = trim_spaces("");
+    handle_string_test("", result, __LINE__, __FILE__, info);
+    free(result);
+}
+
+void test_case_only_whitespace_trim_spaces(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trim_spaces` with only spaces string");
+
+    result = trim_spaces("    ");
+    handle_string_test("", result, __LINE__, __FILE__, info);
+    free(result);
+}
+
+void test_case_nothing_to_trim_trim_spaces(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trim_spaces` with nothing to trim");
+
+    result = trim_spaces("aaaaa");
+    handle_string_test("aaaaa", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trim_spaces("a   a");
+    handle_string_test("a   a", result, __LINE__, __FILE__, info);
+    free(result);
+}
+
+void test_case_trim_start_trim_spaces(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trim_spaces` with only spaces at start");
+
+    result = trim_spaces(" a");
+    handle_string_test("a", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trim_spaces("      a");
+    handle_string_test("a", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trim_spaces("   a      a");
+    handle_string_test("a      a", result, __LINE__, __FILE__, info);
+    free(result);
+}
+
+void test_case_trim_end_trim_spaces(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trim_spaces` with only spaces at end");
+
+    result = trim_spaces("a ");
+    handle_string_test("a", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trim_spaces("a      ");
+    handle_string_test("a", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trim_spaces("a  a    ");
+    handle_string_test("a  a", result, __LINE__, __FILE__, info);
+    free(result);
+}
+
+void test_case_trim_both_trim_spaces(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `trim_spaces` with spaces at start and end");
+
+    result = trim_spaces(" a ");
+    handle_string_test("a", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trim_spaces("    a    ");
+    handle_string_test("a", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = trim_spaces("   a a  ");
+    handle_string_test("a a", result, __LINE__, __FILE__, info);
     free(result);
 }

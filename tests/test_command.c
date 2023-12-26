@@ -325,7 +325,7 @@ void test_complex_background_parsing_args_spaces(test_info *info) {
     handle_boolean_test(false, commands == NULL, __LINE__, __FILE__, info);
     handle_int_test(2, total_commands, __LINE__, __FILE__, info);
 
-    command_call *expected_0 = parse_command("sleep 10");
+    command_call *expected_0 = parse_command("sleep  10");
     expected_0->background = 1;
     handle_command_call_test(commands[0], expected_0, __LINE__, __FILE__, info);
 

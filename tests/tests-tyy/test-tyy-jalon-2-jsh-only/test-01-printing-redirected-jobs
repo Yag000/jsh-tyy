@@ -1,0 +1,5 @@
+$ ./usleep 100 >| /dev/null &
+$ jobs
+$    ./usleep   100     >|   /dev/null    &
+$ jobs
+$ exit
