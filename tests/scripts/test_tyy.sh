@@ -3,7 +3,6 @@
 AUTOTEST_GIT="https://gaufre.informatique.univ-paris-diderot.fr/geoffroy/sy5-2023-2024-projet-jsh-autotests.git"
 AUTOTEST_DIR=".sy5-2023-2024-projet-jsh-autotests.nosync"
 TESTS_DIR="test-files"
-TEST_DIR_NAME="tyy"
 TYY_TEST="$PWD/tests/tests-tyy"
 
 function help() {
@@ -37,7 +36,9 @@ if [ $ON_LULU = "true" ]; then
          cp -r $TYY_TEST/$f ./$AUTOTEST_DIR/$TESTS_DIR
    done
 else 
-   cp -r $TYY_TEST/* ./$AUTOTEST_DIR/$TESTS_DIR/
+   for f in $(ls $TYY_TEST | grep -v "\-jsh-only$"); do
+         cp -r $TYY_TEST/$f ./$AUTOTEST_DIR/$TESTS_DIR
+   done
 fi
 
 (
