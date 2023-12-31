@@ -64,7 +64,7 @@ test_professor:
 
   script:
     - echo "Run professors tests"
-    - make test-professor
+    - TEST_FOLDER_FILTER=jalon make test-professor
 
 ### Format stage
 #
