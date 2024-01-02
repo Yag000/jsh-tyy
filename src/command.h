@@ -24,19 +24,28 @@ typedef struct command_call {
     size_t argc;
     char **argv;
     char *command_string;
+    struct command_call **dependencies;
+    size_t dependencies_count;
     int background; // 1 if the command is to be executed in background, 0 otherwise
     int stdin;
     int stdout;
     int stderr;
 } command_call;
 
-/** Returns a new command call with the given name, argc and argv. */
+/** Returns a new command call with the given argc, argv and string used to call it. */
 command_call *new_command_call(size_t argc, char **argv, char *command_string);
 
 /** Frees the memory allocated for the command call.
+ * It also destroys all of its dependencies.
  * Calls for `close_unused_file_descriptors`.
  */
 void destroy_command_call(command_call *command_call);
+
+/** Frees the memory allocated for the command call.
+ * It doesn't destroy its dependencies.
+ * Calls for `close_unused_file_descriptors`.
+ */
+void soft_destroy_command_call(command_call *command_call);
 
 /** Prints the command call to `fd`, following the format:
  *  name argv[0] argv[1] ... argv[argc - 1]

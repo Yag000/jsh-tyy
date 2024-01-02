@@ -15,4 +15,6 @@ void helper_mute_update_jobs(char *file_name);
 
 command_result *mute_command_execution(command_call *);
 
+job *new_single_command_job(command_call *, pid_t, job_status, job_type);
+
 #endif // UTILS_H

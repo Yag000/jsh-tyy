@@ -14,21 +14,41 @@ char *job_status_to_string(job_status);
 
 typedef enum job_type { FOREGROUND, BACKGROUND } job_type;
 
-typedef struct job {
+typedef struct subjob {
     command_call *command;
     pid_t pid;
-    size_t id; // Job number, 1-indexed
     job_status last_status;
+} subjob;
+
+typedef struct job {
+    size_t id; // Job number, 1-indexed
+    size_t subjobs_size;
+    pid_t pgid; // Process group id for all the subjobs
+    subjob **subjobs;
     job_type type;
 } job;
 
-/** Returns a new job with the given command call, pid, last status and type. */
-job *new_job(command_call *, pid_t, job_status, job_type);
+/** Returns a new subjob with the given command call, pid, last status and type. */
+subjob *new_subjob(command_call *, pid_t, job_status);
+
+/** Frees the memory allocated for the subjob.
+ *  Calls `destroy_command_call` to free `subjob-> command`.
+ */
+void destroy_subjob(subjob *);
+
+/** Returns a new job with the given subjobs size, the
+ * subjobs will be set to NULL. */
+job *new_job(size_t, job_type);
 
 /** Frees the memory allocated for the job.
- *  Calls `destroy_command_call` to free `job-> call`.
+ *  Calls `destroy_subjob` on all the job's subjobs.
  */
 void destroy_job(job *);
+/**
+ * Destroys the job and its subjobs but it does not
+ * destroy the `command_call` associated to each subjob
+ */
+void soft_destroy_job(job *);
 
 /** Prints the job to `fd`, following the format:
  *  [id] pid status command

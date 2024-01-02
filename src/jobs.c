@@ -1,4 +1,3 @@
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/wait.h>
@@ -30,8 +29,8 @@ char *job_status_to_string(job_status status) {
     exit(1);
 }
 
-job *new_job(command_call *command, pid_t pid, job_status status, job_type type) {
-    job *j = malloc(sizeof(job));
+subjob *new_subjob(command_call *command, pid_t pid, job_status status) {
+    subjob *j = malloc(sizeof(subjob));
 
     if (j == NULL) {
         perror("malloc");
@@ -40,26 +39,78 @@ job *new_job(command_call *command, pid_t pid, job_status status, job_type type)
 
     j->command = command;
     j->pid = pid;
-    j->id = UNINITIALIZED_JOB_ID;
     j->last_status = status;
+
+    return j;
+}
+
+void destroy_subjob(subjob *j) {
+    if (j == NULL) {
+        return;
+    }
+
+    soft_destroy_command_call(j->command);
+    free(j);
+}
+
+job *new_job(size_t subjobs_size, job_type type) {
+    job *j = malloc(sizeof(job));
+    j->id = UNINITIALIZED_JOB_ID;
+
+    j->subjobs_size = subjobs_size;
+
+    subjob **subjobs = malloc(subjobs_size * sizeof(subjob *));
+    for (size_t i = 0; i < subjobs_size; i++) {
+        subjobs[i] = NULL;
+    }
+    j->subjobs = subjobs;
+    j->pgid = 0;
     j->type = type;
 
     return j;
 }
 
 void destroy_job(job *j) {
-    if (j != NULL) {
-        destroy_command_call(j->command);
+    if (j == NULL) {
+        return;
     }
+
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        destroy_subjob(j->subjobs[i]);
+    }
+
+    free(j->subjobs);
     free(j);
 }
 
-void print_job(job *j, int fd) {
-    dprintf(fd, "[%ld]\t%d\t%s\t", j->id, j->pid, job_status_to_string(j->last_status));
+void soft_destroy_job(job *j) {
+    if (j == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        free(j->subjobs[i]);
+    }
+
+    free(j->subjobs);
+    free(j);
+}
+
+void print_subjob(subjob *j, int fd) {
+    dprintf(fd, "\t%d\t%s\t", j->pid, job_status_to_string(j->last_status));
     command_call_print(j->command, fd);
     dprintf(fd, "\n");
 }
 
+void print_job(job *j, int fd) {
+    dprintf(fd, "[%ld]", j->id);
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        if (j->subjobs[i] == NULL) {
+            continue;
+        }
+        print_subjob(j->subjobs[i], fd);
+    }
+}
 void init_job_table() {
     destroy_job_table();
     job_table = malloc(INITIAL_JOB_TABLE_CAPACITY * sizeof(job *));
@@ -170,10 +221,23 @@ int get_job_status(int pid, job_status *last_status) {
     return 1;
 }
 
+int is_job_running(job *j) {
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        if (j->subjobs[i] == NULL) {
+            continue;
+        }
+        if (j->subjobs[i]->last_status == RUNNING || j->subjobs[i]->last_status == STOPPED) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int are_jobs_running() {
     for (size_t i = 0; i < job_table_capacity; i++) {
+
         if (job_table[i] != NULL) {
-            if (job_table[i]->last_status == RUNNING || job_table[i]->last_status == STOPPED) {
+            if (is_job_running(job_table[i])) {
                 return 1;
             }
         }
@@ -185,30 +249,59 @@ int are_jobs_running() {
  * Returns 1 if the job should be removed from the job table.
  * Returns 0 otherwise.
  */
-int should_remove_job(job_status status) {
+int is_remove_status(job_status status) {
     if (status == DONE || status == KILLED || status == DETACHED) {
         return 1;
     }
     return 0;
 }
 
+int should_remove_job(job *job) {
+    for (size_t j = 0; j < job->subjobs_size; j++) {
+        if (job->subjobs[j] == NULL) {
+            continue;
+        }
+        if (!is_remove_status(job->subjobs[j]->last_status)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int update_subjob(job *job, size_t subjob_index) {
+    subjob *subjob = job->subjobs[subjob_index];
+    int has_changed = get_job_status(subjob->pid, &subjob->last_status);
+
+    if (has_changed == -1) {
+        return 0;
+    }
+
+    if (has_changed) {
+        return 1;
+    }
+
+    return 0;
+}
+
 void fd_update_jobs(int fd) {
     for (size_t i = 0; i < job_table_capacity; i++) {
         if (job_table[i] != NULL) {
-
-            int has_changed = get_job_status(job_table[i]->pid, &job_table[i]->last_status);
-
-            if (has_changed == -1) {
-                continue;
-            }
-
-            if (has_changed) {
-                if (job_table[i]->type == BACKGROUND) {
-                    print_job(job_table[i], fd);
+            int should_print = 0;
+            for (size_t j = 0; j < job_table[i]->subjobs_size; j++) {
+                if (job_table[i]->subjobs[j] == NULL) {
+                    continue;
+                }
+                int has_changed = update_subjob(job_table[i], j);
+                if (has_changed) {
+                    should_print = 1;
                 }
             }
 
-            if (should_remove_job(job_table[i]->last_status)) {
+            if (should_print) {
+                print_job(job_table[i], fd);
+            }
+
+            if (should_remove_job(job_table[i])) {
                 remove_job(job_table[i]->id);
             }
         }
