@@ -72,7 +72,7 @@ void test_case_are_jobs_running_one_job(test_info *info) {
 
     handle_int_test(1, are_jobs_running(), __LINE__, __FILE__, info);
 
-    handle_int_test(RUNNING, job_table[0]->last_status, __LINE__, __FILE__, info);
+    handle_int_test(RUNNING, job_table[0]->subjobs[0]->last_status, __LINE__, __FILE__, info);
 
     kill(result->pid, SIGKILL);
 
@@ -149,7 +149,7 @@ void test_case_are_jobs_running_stop(test_info *info) {
     helper_mute_update_jobs("test_running_jobs_stop.log");
 
     handle_int_test(1, are_jobs_running(), __LINE__, __FILE__, info);
-    handle_int_test(STOPPED, job_table[0]->last_status, __LINE__, __FILE__, info);
+    handle_int_test(STOPPED, job_table[0]->subjobs[0]->last_status, __LINE__, __FILE__, info);
 
     kill(result->pid, SIGKILL);
 

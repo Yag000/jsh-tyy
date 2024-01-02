@@ -72,7 +72,7 @@ int kill_job(size_t job_id, int sig) {
         return 0;
     }
 
-    pid_t to_kill = job_table[job_id - 1]->pid;
+    pid_t to_kill = job_table[job_id - 1]->pgid;
 
     return kill_query(-to_kill, sig); // Kill the group
 }
