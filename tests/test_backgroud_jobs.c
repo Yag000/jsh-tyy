@@ -40,7 +40,7 @@ void test_launching_one_bg_job(test_info *info) {
     handle_int_test(result->job_id, 1, __LINE__, __FILE__, info);
 
     handle_int_test(job_table_size, 1, __LINE__, __FILE__, info);
-    handle_command_call_test(job_table[0]->command, command, __LINE__, __FILE__, info);
+    handle_command_call_test(job_table[0]->subjobs[0]->command, command, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
 
@@ -64,7 +64,7 @@ void test_launching_multiple_bg_jobs(test_info *info) {
         handle_int_test(result->job_id, i + 1, __LINE__, __FILE__, info);
 
         handle_int_test(job_table_size, i + 1, __LINE__, __FILE__, info);
-        handle_command_call_test(job_table[i]->command, command, __LINE__, __FILE__, info);
+        handle_command_call_test(job_table[i]->subjobs[0]->command, command, __LINE__, __FILE__, info);
 
         destroy_command_result(result);
     }

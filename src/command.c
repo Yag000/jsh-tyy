@@ -2,6 +2,7 @@
 #include "internals.h"
 #include "jobs.h"
 #include "string_utils.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
@@ -27,6 +28,8 @@ command_call *new_command_call(size_t argc, char **argv, char *command_string) {
     command_call->argc = argc;
     command_call->argv = argv;
     command_call->background = 0;
+    command_call->dependencies = NULL;
+    command_call->dependencies_count = 0;
     command_call->stdin = STDIN_FILENO;
     command_call->stdout = STDOUT_FILENO;
     command_call->stderr = STDERR_FILENO;
@@ -51,6 +54,32 @@ void destroy_command_call(command_call *command_call) {
 
     for (size_t index = 0; index < command_call->argc; index++) {
         free(command_call->argv[index]);
+    }
+
+    if (command_call->dependencies != NULL) {
+        for (size_t i = 0; i < command_call->dependencies_count; i++) {
+            destroy_command_call(command_call->dependencies[i]);
+        }
+        free(command_call->dependencies);
+    }
+
+    free(command_call->argv);
+    free(command_call->command_string);
+    close_unused_file_descriptors(command_call);
+    free(command_call);
+}
+
+void soft_destroy_command_call(command_call *command_call) {
+    if (command_call == NULL) {
+        return;
+    }
+
+    for (size_t index = 0; index < command_call->argc; index++) {
+        free(command_call->argv[index]);
+    }
+
+    if (command_call->dependencies != NULL) {
+        free(command_call->dependencies);
     }
 
     free(command_call->argv);
@@ -183,7 +212,6 @@ int parse_redirections(int *fds, char *redirection_symbol, char *filename) {
 }
 
 command_call *parse_command(char *command_string) {
-
     size_t argc;
     char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
     if (argc == 0) {

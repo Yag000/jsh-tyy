@@ -1,6 +1,7 @@
 #include "../src/jobs.h"
 #include "../src/prompt.h"
 #include "test_core.h"
+#include "utils.h"
 #include <string.h>
 
 void test_promt_string_no_jobs(test_info *);
@@ -47,7 +48,7 @@ void test_promt_string_with_one_jobs(test_info *info) {
     init_job_table();
 
     command_call *command = parse_command("pwd");
-    job *job = new_job(command, 100, RUNNING, FOREGROUND);
+    job *job = new_single_command_job(command, 100, RUNNING, FOREGROUND);
     add_job(job);
 
     char *prompt_string = get_prompt_string();
@@ -71,7 +72,7 @@ void test_promt_string_with_jobs(test_info *info) {
     for (int i = 0; i < 100; i++) {
 
         command_call *command = parse_command("pwd");
-        job *job = new_job(command, 100, RUNNING, FOREGROUND);
+        job *job = new_single_command_job(command, 100, RUNNING, FOREGROUND);
         add_job(job);
 
         snprintf(expected, 100, "\001\033[0;33m\002[%d]", i + 1);
@@ -96,7 +97,7 @@ void test_promt_string_remove_jobs(test_info *info) {
     for (int i = 0; i < 100; i++) {
 
         command_call *command = parse_command("pwd");
-        job *job = new_job(command, 100, RUNNING, FOREGROUND);
+        job *job = new_single_command_job(command, 100, RUNNING, FOREGROUND);
         add_job(job);
     }
 

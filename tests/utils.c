@@ -79,16 +79,9 @@ void handle_command_result_test(command_result *actual, command_result *expected
     info->passed++;
 }
 
-void handle_job_test(job *actual, job *expected, int line, const char *file, test_info *info) {
+void handle_subjob_test(subjob *actual, subjob *expected, int line, const char *file, test_info *info) {
     info->total++;
-
     int failed = info->failed;
-
-    handle_int_test(actual->id, expected->id, line, file, info);
-    if (failed != info->failed) {
-        info->failed++;
-        return;
-    }
 
     handle_int_test(actual->pid, expected->pid, line, file, info);
     if (failed != info->failed) {
@@ -102,16 +95,43 @@ void handle_job_test(job *actual, job *expected, int line, const char *file, tes
         return;
     }
 
+    handle_command_call_test(actual->command, expected->command, line, file, info);
+    if (failed != info->failed) {
+        info->failed++;
+        return;
+    }
+
+    info->passed++;
+}
+void handle_job_test(job *actual, job *expected, int line, const char *file, test_info *info) {
+    info->total++;
+
+    int failed = info->failed;
+
+    handle_int_test(actual->id, expected->id, line, file, info);
+    if (failed != info->failed) {
+        info->failed++;
+        return;
+    }
+
     handle_int_test(actual->type, expected->type, line, file, info);
     if (failed != info->failed) {
         info->failed++;
         return;
     }
 
-    handle_command_call_test(actual->command, expected->command, line, file, info);
+    handle_int_test(actual->subjobs_size, expected->subjobs_size, line, file, info);
     if (failed != info->failed) {
         info->failed++;
         return;
+    }
+
+    for (size_t i = 0; i < actual->subjobs_size; i++) {
+        handle_subjob_test(actual->subjobs[i], expected->subjobs[i], line, file, info);
+        if (failed != info->failed) {
+            info->failed++;
+            return;
+        }
     }
 
     info->passed++;
@@ -132,4 +152,12 @@ command_result *mute_command_execution(command_call *command_call) {
     close(old_stdout);
 
     return result;
+}
+
+job *new_single_command_job(command_call *command_call, pid_t pid, job_status status, job_type type) {
+    job *job = new_job(1, type);
+    subjob *subjob = new_subjob(command_call, pid, status);
+    job->subjobs[0] = subjob;
+
+    return job;
 }
