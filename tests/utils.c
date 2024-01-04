@@ -1,6 +1,8 @@
 #include "utils.h"
+#include "../src/command.h"
 #include "../src/internals.h"
 #include "test_core.h"
+
 #include <assert.h>
 #include <fcntl.h>
 
@@ -58,19 +60,41 @@ void handle_command_call_test(command_call *actual, command_call *expected, int 
     info->passed++;
 }
 
-void handle_command_result_test(command_result *actual, command_result *expected, int line, const char *file,
-                                test_info *info) {
+void handle_command_test(command *actual, command *expected, int line, const char *file, test_info *info) {
     info->total++;
 
     int failed = info->failed;
 
-    handle_int_test(actual->exit_code, expected->exit_code, line, file, info);
+    handle_command_call_test(actual->call, expected->call, line, file, info);
     if (failed != info->failed) {
         info->failed++;
         return;
     }
 
-    handle_command_call_test(actual->call, expected->call, line, file, info);
+    handle_int_test(actual->open_pipes_size, expected->open_pipes_size, line, file, info);
+    if (failed != info->failed) {
+        info->failed++;
+        return;
+    }
+
+    for (size_t i = 0; i < actual->open_pipes_size; i++) {
+        for (size_t j = 0; j < 2; j++) {
+            handle_int_test(actual->open_pipes[i][j], expected->open_pipes[i][j], line, file, info);
+            if (failed != info->failed) {
+                info->failed++;
+                return;
+            }
+        }
+    }
+
+    info->passed++;
+}
+void handle_command_result_test(command_result *actual, command_result *expected, int line, const char *file,
+                                test_info *info) {
+    info->total++;
+    int failed = info->failed;
+
+    handle_int_test(actual->exit_code, expected->exit_code, line, file, info);
     if (failed != info->failed) {
         info->failed++;
         return;
@@ -95,7 +119,7 @@ void handle_subjob_test(subjob *actual, subjob *expected, int line, const char *
         return;
     }
 
-    handle_command_call_test(actual->command, expected->command, line, file, info);
+    handle_string_test(actual->command, expected->command, line, file, info);
     if (failed != info->failed) {
         info->failed++;
         return;
@@ -137,14 +161,14 @@ void handle_job_test(job *actual, job *expected, int line, const char *file, tes
     info->passed++;
 }
 
-command_result *mute_command_execution(command_call *command_call) {
+command_result *mute_command_execution(command *command) {
     int fd = open("/dev/null", O_WRONLY);
     assert(fd != -1);
     int old_stdout = dup(STDOUT_FILENO);
     assert(old_stdout != -1);
     dup2(fd, STDERR_FILENO);
 
-    command_result *result = execute_command_call(command_call);
+    command_result *result = execute_command(command);
 
     dup2(old_stdout, STDOUT_FILENO);
 

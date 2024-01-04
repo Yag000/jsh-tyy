@@ -47,8 +47,9 @@ void test_promt_string_with_one_jobs(test_info *info) {
 
     init_job_table();
 
-    command_call *command = parse_command("pwd");
-    job *job = new_single_command_job(command, 100, RUNNING, FOREGROUND);
+    command *command = parse_command("pwd");
+    job *job = new_single_command_job(command->call, 100, RUNNING, FOREGROUND);
+    destroy_command(command);
     add_job(job);
 
     char *prompt_string = get_prompt_string();
@@ -71,9 +72,10 @@ void test_promt_string_with_jobs(test_info *info) {
 
     for (int i = 0; i < 100; i++) {
 
-        command_call *command = parse_command("pwd");
-        job *job = new_single_command_job(command, 100, RUNNING, FOREGROUND);
+        command *command = parse_command("pwd");
+        job *job = new_single_command_job(command->call, 100, RUNNING, FOREGROUND);
         add_job(job);
+        destroy_command(command);
 
         snprintf(expected, 100, "\001\033[0;33m\002[%d]", i + 1);
 
@@ -96,8 +98,10 @@ void test_promt_string_remove_jobs(test_info *info) {
 
     for (int i = 0; i < 100; i++) {
 
-        command_call *command = parse_command("pwd");
-        job *job = new_single_command_job(command, 100, RUNNING, FOREGROUND);
+        command *command = parse_command("pwd");
+        job *job = new_single_command_job(command->call, 100, RUNNING, FOREGROUND);
+        destroy_command(command);
+
         add_job(job);
     }
 

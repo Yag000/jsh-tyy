@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -37,7 +38,13 @@ subjob *new_subjob(command_call *command, pid_t pid, job_status status) {
         return NULL;
     }
 
-    j->command = command;
+    j->command = malloc((strlen(command->command_string) + 1) * sizeof(char));
+    if (j->command == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    strcpy(j->command, command->command_string);
     j->pid = pid;
     j->last_status = status;
 
@@ -49,7 +56,7 @@ void destroy_subjob(subjob *j) {
         return;
     }
 
-    soft_destroy_command_call(j->command);
+    free(j->command);
     free(j);
 }
 
@@ -83,23 +90,8 @@ void destroy_job(job *j) {
     free(j);
 }
 
-void soft_destroy_job(job *j) {
-    if (j == NULL) {
-        return;
-    }
-
-    for (size_t i = 0; i < j->subjobs_size; i++) {
-        free(j->subjobs[i]);
-    }
-
-    free(j->subjobs);
-    free(j);
-}
-
 void print_subjob(subjob *j, int fd) {
-    dprintf(fd, "\t%d\t%s\t", j->pid, job_status_to_string(j->last_status));
-    command_call_print(j->command, fd);
-    dprintf(fd, "\n");
+    dprintf(fd, "\t%d\t%s\t%s\n", j->pid, job_status_to_string(j->last_status), j->command);
 }
 
 void print_job(job *j, int fd) {

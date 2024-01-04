@@ -57,6 +57,18 @@ int contains(int *set, size_t size, int value) {
     return 0;
 }
 
+int contains2(int **array, size_t size, size_t subsize, int value) {
+    for (size_t index = 0; index < size; ++index) {
+        for (size_t j = 0; j < subsize; j++) {
+
+            if (array[index][j] == value) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 char *colored(char *color, char *string) {
 
     if (color == NULL || string == NULL) {

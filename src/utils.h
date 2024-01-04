@@ -20,6 +20,8 @@ int add_set(int *set, size_t size, int value);
 /** Returns 1 if the set contains the value, 0 otherwise. */
 int contains(int *set, size_t size, int value);
 
+int contains2(int **array, size_t size, size_t subsize, int value);
+
 /** Removes `value` from the set.
  * Returns 0 if `value` was properly removed, -1 otherwise.
  */

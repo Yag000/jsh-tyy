@@ -31,7 +31,7 @@ test_info *test_external_commands() {
 }
 
 static void test_case_successful_command(test_info *info) {
-    command_call *command;
+    command *command;
     command_result *command_result;
 
     print_test_name("Testing successful external command");
@@ -39,13 +39,13 @@ static void test_case_successful_command(test_info *info) {
     fflush(stdout);
     fflush(stderr);
     command = parse_command("true");
-    command_result = execute_command_call(command);
+    command_result = execute_command(command);
     handle_int_test(0, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 }
 
 static void test_case_unsuccessful_command(test_info *info) {
-    command_call *command;
+    command *command;
     command_result *command_result;
 
     print_test_name("Testing unsuccessful external command");
@@ -53,13 +53,13 @@ static void test_case_unsuccessful_command(test_info *info) {
     fflush(stdout);
     fflush(stderr);
     command = parse_command("false");
-    command_result = execute_command_call(command);
+    command_result = execute_command(command);
     handle_int_test(1, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 }
 
 static void test_case_non_existent_command(test_info *info) {
-    command_call *command;
+    command *command;
     command_result *command_result;
 
     print_test_name("Testing non existent external command");
@@ -68,15 +68,16 @@ static void test_case_non_existent_command(test_info *info) {
 
     fflush(stdout);
     fflush(stderr);
+
     command = parse_command("idonotexistasacommand");
-    command->stderr = bin_fd;
-    command_result = execute_command_call(command);
+    command->call->stderr = bin_fd;
+    command_result = execute_command(command);
     handle_int_test(1, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 }
 
 static void test_case_existent_file_command(test_info *info) {
-    command_call *command;
+    command *command;
     command_result *command_result;
 
     print_test_name("Testing existent file external command");
@@ -84,20 +85,20 @@ static void test_case_existent_file_command(test_info *info) {
     fflush(stdout);
     fflush(stderr);
     command = parse_command("./tests/scripts/always_true.sh");
-    command_result = execute_command_call(command);
+    command_result = execute_command(command);
     handle_int_test(0, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 
     fflush(stdout);
     fflush(stderr);
     command = parse_command("./tests/scripts/always_false.sh");
-    command_result = execute_command_call(command);
+    command_result = execute_command(command);
     handle_int_test(1, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 }
 
 static void test_case_non_existent_file_command(test_info *info) {
-    command_call *command;
+    command *command;
     command_result *command_result;
 
     print_test_name("Testing non existent file external command");
@@ -107,8 +108,8 @@ static void test_case_non_existent_file_command(test_info *info) {
     fflush(stdout);
     fflush(stderr);
     command = parse_command("./tmp/iamadirectory");
-    command->stderr = bin_fd;
-    command_result = execute_command_call(command);
+    command->call->stderr = bin_fd;
+    command_result = execute_command(command);
     handle_int_test(1, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 
@@ -117,8 +118,8 @@ static void test_case_non_existent_file_command(test_info *info) {
     fflush(stdout);
     fflush(stderr);
     command = parse_command("./tmp/idonotexist");
-    command->stderr = bin_fd;
-    command_result = execute_command_call(command);
+    command->call->stderr = bin_fd;
+    command_result = execute_command(command);
     handle_int_test(1, command_result->exit_code, __LINE__, __FILE__, info);
     destroy_command_result(command_result);
 }

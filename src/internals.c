@@ -23,8 +23,9 @@ const size_t LIMIT_PROMPT_SIZE = 30;
 
 int should_exit;
 
-command_result *execute_internal_command(command_call *command_call);
-command_result *execute_external_command(command_call *command_call);
+int execute_internal_command(command_call *command_call);
+command_result *execute_external_command(command *command_call);
+void close_unused_file_descriptors(command *command, command_call *command_call);
 
 void init_internals() {
     last_exit_code = 0;
@@ -32,47 +33,83 @@ void init_internals() {
     init_job_table();
 }
 
-command_result *execute_command_call(command_call *command_call) {
+command_result *execute_command(command *command) {
     command_result *result;
+    command_call *command_call = command->call;
 
     if (is_internal_command(command_call) && command_call->dependencies_count == 0) {
-        result = execute_internal_command(command_call);
+        int exit_code = execute_internal_command(command_call);
+        result = new_command_result(exit_code, command);
     } else {
-        result = execute_external_command(command_call);
+        result = execute_external_command(command);
     }
+
+    close_unused_file_descriptors(command, command->call);
 
     update_command_history(result);
     return result;
 }
 
 /** Executes an internal command call. */
-command_result *execute_internal_command(command_call *command_call) {
-    command_result *command_result = new_command_result(1, command_call);
-
+int execute_internal_command(command_call *command_call) {
+    int exit_code = 0;
     /** TODO: Implement the remaining internal commands. */
 
     if (strcmp(command_call->name, "cd") == 0) {
-        command_result->exit_code = cd(command_call);
+        exit_code = cd(command_call);
     } else if (strcmp(command_call->name, "?") == 0) {
-        command_result->exit_code = last_exit_code_command(command_call);
+        exit_code = last_exit_code_command(command_call);
     } else if (strcmp(command_call->name, "exit") == 0) {
-        command_result->exit_code = exit_command(command_call);
+        exit_code = exit_command(command_call);
     } else if (strcmp(command_call->name, "pwd") == 0) {
-        command_result->exit_code = pwd(command_call);
+        exit_code = pwd(command_call);
     } else if (strcmp(command_call->name, "jobs") == 0) {
-        command_result->exit_code = jobs_command(command_call);
+        exit_code = jobs_command(command_call);
     } else if (strcmp(command_call->name, "kill") == 0) {
-        command_result->exit_code = kill_command(command_call);
+        exit_code = kill_command(command_call);
     }
 
-    return command_result;
+    return exit_code;
 }
 
-pid_t execute_single_command(command_call *command_call, job *job) {
+void close_reading_pipes(command *command, command_call *command_call) {
+    if (command == NULL || command->open_pipes == NULL || command->open_pipes_size == 0 || command_call == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; i < command->open_pipes_size; i++) {
+        if (contains(command_call->owned_pipe_indexes, command_call->dependencies_count, i)) {
+            continue;
+        }
+        if (command->open_pipes[i] == NULL) {
+            continue;
+        }
+
+        close(command->open_pipes[i][0]);
+    }
+}
+
+void close_writing_pipes(command *command, command_call *command_call, size_t dependency_id) {
+    if (command == NULL || command->open_pipes == NULL || command->open_pipes_size == 0 || command_call == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; i < command->open_pipes_size; i++) {
+        if (i + 1 == dependency_id) {
+            continue;
+        }
+        if (command->open_pipes[i] == NULL) {
+            continue;
+        }
+        close(command->open_pipes[i][1]);
+    }
+}
+
+pid_t execute_single_command(command *command, command_call *command_call, job *job, int dependency_id) {
     // TODO: Solve this gracefully and properly. When implementing pipelines, this could be
     // a problem. (see !65)
     if (is_internal_command(command_call)) {
-        destroy_command_result(execute_internal_command(command_call));
+        execute_internal_command(command_call);
         return 0;
     }
 
@@ -84,6 +121,9 @@ pid_t execute_single_command(command_call *command_call, job *job) {
     }
 
     if (pid == 0) {
+        close_reading_pipes(command, command_call);
+        close_writing_pipes(command, command_call, dependency_id);
+
         dup2(command_call->stdin, STDIN_FILENO);
         dup2(command_call->stdout, STDOUT_FILENO);
         dup2(command_call->stderr, STDERR_FILENO);
@@ -112,7 +152,7 @@ pid_t execute_single_command(command_call *command_call, job *job) {
  *
  * Returns the pid of the executed command_call (not it's dependencies).
  */
-pid_t execute_as_job(command_call *command_call, job *job) {
+pid_t execute_as_job(command *command, command_call *command_call, job *job) {
     size_t index;
 
     for (index = 0; index < job->subjobs_size; index++) {
@@ -126,21 +166,22 @@ pid_t execute_as_job(command_call *command_call, job *job) {
     // more graceful).
     assert(index < job->subjobs_size);
 
-    pid_t pid = execute_single_command(command_call, job);
+    pid_t pid = execute_single_command(command, command_call, job, index);
+
     if (pid != 0) {
         subjob *subjob = new_subjob(command_call, pid, RUNNING);
         job->subjobs[index] = subjob;
     }
 
     for (size_t i = 0; i < command_call->dependencies_count; i++) {
-        execute_as_job(command_call->dependencies[i], job);
+        execute_as_job(command, command_call->dependencies[i], job);
     }
 
     return pid;
 }
 
 size_t count_dependencies(command_call *command_call) {
-    int dependencies_count = 1;
+    size_t dependencies_count = 1;
 
     for (size_t i = 0; i < command_call->dependencies_count; i++) {
         dependencies_count += count_dependencies(command_call->dependencies[i]);
@@ -158,16 +199,25 @@ job *setup_job(command_call *command_call) {
 }
 
 /** Executes an external command call. */
-command_result *execute_external_command(command_call *command_call) {
-    command_result *command_result = new_command_result(1, command_call);
+command_result *execute_external_command(command *command) {
     pid_t pid;
     int status;
 
-    job *job = setup_job(command_call);
+    int background = command->call->background;
+    command_result *command_result = new_command_result(1, command);
+    job *job = setup_job(command->call);
 
-    pid = execute_as_job(command_call, job);
+    pid = execute_as_job(command, command->call, job);
 
-    if (command_call->background == 0) {
+    for (size_t i = 0; i < command->open_pipes_size; i++) {
+        if (command->open_pipes[i] == NULL) {
+            continue;
+        }
+        close(command->open_pipes[i][0]);
+        close(command->open_pipes[i][1]);
+    }
+
+    if (background == 0) {
         int pid_ = waitpid(pid, &status, WUNTRACED);
         if (pid_ == -1) {
             perror("waitpid");
@@ -176,7 +226,7 @@ command_result *execute_external_command(command_call *command_call) {
 
         if (WIFEXITED(status)) {
             command_result->exit_code = WEXITSTATUS(status);
-            soft_destroy_job(job);
+            destroy_job(job);
         } else if (WIFSTOPPED(status)) {
             int job_id = add_job(job);
 
@@ -187,7 +237,6 @@ command_result *execute_external_command(command_call *command_call) {
             command_result->job_id = job_id;
             command_result->pid = pid;
             command_result->exit_code = 0;
-            command_result->call = NULL;
         }
 
         return command_result;
@@ -200,7 +249,6 @@ command_result *execute_external_command(command_call *command_call) {
     command_result->job_id = job_id;
     command_result->pid = pid;
     command_result->exit_code = 0;
-    command_result->call = NULL;
 
     return command_result;
 }
@@ -212,7 +260,7 @@ void update_command_history(command_result *result) {
     }
 }
 
-void close_unused_file_descriptors(command_call *command) {
+void close_unused_file_descriptors(command *command, command_call *command_call) {
     if (command == NULL) {
         return;
     }
@@ -229,14 +277,19 @@ void close_unused_file_descriptors(command_call *command) {
         fds_to_close[index] = -1;
     }
 
-    add_set(fds_to_close, nb_fds_to_close, command->stdin);
-    add_set(fds_to_close, nb_fds_to_close, command->stdout);
-    add_set(fds_to_close, nb_fds_to_close, command->stderr);
+    add_set(fds_to_close, nb_fds_to_close, command_call->stdin);
+    add_set(fds_to_close, nb_fds_to_close, command_call->stdout);
+    add_set(fds_to_close, nb_fds_to_close, command_call->stderr);
 
     for (size_t index = 0; index < nb_fds_to_close; ++index) {
-        if (fds_to_close[index] > 2) {
+        if (fds_to_close[index] > 2 &&
+            !contains2(command->open_pipes, command->open_pipes_size, 2, fds_to_close[index])) {
             close(fds_to_close[index]);
         }
+    }
+
+    for (size_t i = 0; i < command_call->dependencies_count; i++) {
+        close_unused_file_descriptors(command, command_call->dependencies[i]);
     }
 
     free(fds_to_close);

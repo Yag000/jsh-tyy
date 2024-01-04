@@ -8,9 +8,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#define REDIRECTION_CARET_SYMBOLS_COUNT 7
+#define REDIRECTION_CARET_SYMBOLS_COUNT 9
 #define INTERNAL_COMMANDS_COUNT 8
 #define UNINITIALIZED_PID -2
+
+#define COMMAND_SUBSTITUTION_START "<("
+#define COMMAND_SUBSTITUTION_END ")"
 
 /** Array of internal command names. */
 extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
@@ -26,7 +29,9 @@ typedef struct command_call {
     char *command_string;
     struct command_call **dependencies;
     size_t dependencies_count;
-    int background; // 1 if the command is to be executed in background, 0 otherwise
+    int *owned_pipe_indexes; // Array of indexes of the array 'open_pipes' that represent the pipes the command controls
+                             // directly (communication with it's direct dependencies)
+    int background;          // 1 if the command is to be executed in background, 0 otherwise
     int stdin;
     int stdout;
     int stderr;
@@ -41,12 +46,6 @@ command_call *new_command_call(size_t argc, char **argv, char *command_string);
  */
 void destroy_command_call(command_call *command_call);
 
-/** Frees the memory allocated for the command call.
- * It doesn't destroy its dependencies.
- * Calls for `close_unused_file_descriptors`.
- */
-void soft_destroy_command_call(command_call *command_call);
-
 /** Prints the command call to `fd`, following the format:
  *  name argv[0] argv[1] ... argv[argc - 1]
  */
@@ -54,6 +53,15 @@ void command_call_print(command_call *command_call, int fd);
 
 /** Returns 1 if the command call is an internal command, 0 otherwise. */
 int is_internal_command(command_call *command_call);
+
+typedef struct command {
+    command_call *call;
+    int **open_pipes;
+    size_t open_pipes_size;
+} command;
+
+command *new_command(command_call *call, int **open_pipes, size_t open_pipes_size);
+void destroy_command(command *command);
 
 /** Parse unique command string to `command_call`.
  *  Returns `command_call` if correctly written, NULL otherwise.
@@ -63,10 +71,10 @@ int is_internal_command(command_call *command_call);
  *      -> "cat >> output file0"
  *      -> "sleep 1000 2>> error.log > random 2>| true_error.log"
  */
-command_call *parse_command(char *command_string);
+command *parse_command(char *command_string);
 
-/** Parses the command string and returns an array of command calls. */
-command_call **parse_read_line(char *command, size_t *total_commands);
+/** Parses the command string and returns an array of commands. */
+command **parse_read_line(char *command, size_t *total_commands);
 
 /** Structure that represents the result of a command.
  *  - If the command is an internal command or it is ran on foreground then
@@ -77,13 +85,13 @@ command_call **parse_read_line(char *command, size_t *total_commands);
  * */
 typedef struct command_result {
     int exit_code;
-    command_call *call;
     pid_t pid;
     size_t job_id;
+    command *command;
 } command_result;
 
 /** Returns a new command result with the given exit code. */
-command_result *new_command_result(int exit_code, command_call *call);
+command_result *new_command_result(int exit_code, command *command);
 
 /** Frees the memory allocated for the command result.
  *  Calls `destroy_command_call` to free `command_result-> call`.
