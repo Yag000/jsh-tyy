@@ -3,7 +3,6 @@
 #include "../src/jobs.h"
 #include "test_core.h"
 #include "utils.h"
-#include <stdbool.h>
 
 void test_launching_one_bg_job(test_info *);
 void test_launching_multiple_bg_jobs(test_info *);
@@ -31,16 +30,16 @@ void test_launching_one_bg_job(test_info *info) {
 
     int fd = open_test_file_to_write("test_launching_one_bg_job.log");
 
-    command_call *command = parse_command("ls");
-    command->background = 1;
-    command->stdout = fd;
+    command *command = parse_command("ls");
+    command->call->background = 1;
+    command->call->stdout = fd;
     command_result *result = mute_command_execution(command);
 
     handle_boolean_test(result->pid > 0, true, __LINE__, __FILE__, info);
     handle_int_test(result->job_id, 1, __LINE__, __FILE__, info);
 
     handle_int_test(job_table_size, 1, __LINE__, __FILE__, info);
-    handle_command_call_test(job_table[0]->subjobs[0]->command, command, __LINE__, __FILE__, info);
+    handle_string_test(job_table[0]->subjobs[0]->command, command->call->name, __LINE__, __FILE__, info);
 
     destroy_command_result(result);
 
@@ -55,16 +54,16 @@ void test_launching_multiple_bg_jobs(test_info *info) {
     int fd = open_test_file_to_write("test_launching_multiple_bg_jobs.log");
 
     for (int i = 0; i < INITIAL_JOB_TABLE_CAPACITY + 2; i++) {
-        command_call *command = parse_command("ls");
-        command->background = 1;
-        command->stdout = fd;
+        command *command = parse_command("ls");
+        command->call->background = 1;
+        command->call->stdout = fd;
         command_result *result = mute_command_execution(command);
 
         handle_boolean_test(result->pid > 0, true, __LINE__, __FILE__, info);
         handle_int_test(result->job_id, i + 1, __LINE__, __FILE__, info);
 
         handle_int_test(job_table_size, i + 1, __LINE__, __FILE__, info);
-        handle_command_call_test(job_table[i]->subjobs[0]->command, command, __LINE__, __FILE__, info);
+        handle_string_test(job_table[i]->subjobs[0]->command, command->call->name, __LINE__, __FILE__, info);
 
         destroy_command_result(result);
     }

@@ -5,6 +5,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <linux/limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,11 +14,13 @@
 
 const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd", "?", "jobs", "fg", "bg", "kill"};
 
-const char *redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT] = {">", "<", ">|", ">>", "2>", "2>|", "2>>"};
+const char *redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT] = {
+    ">", "<", ">|", ">>", "2>", "2>|", "2>>", COMMAND_SUBSTITUTION_START, COMMAND_SUBSTITUTION_END};
+
+command_call *parse_command_call(char *, int **, size_t *);
 
 /** Returns a new command call with the given name, argc and argv. */
 command_call *new_command_call(size_t argc, char **argv, char *command_string) {
-
     command_call *command_call = malloc(sizeof(*command_call));
     if (command_call == NULL) {
         perror("malloc");
@@ -28,6 +31,7 @@ command_call *new_command_call(size_t argc, char **argv, char *command_string) {
     command_call->argc = argc;
     command_call->argv = argv;
     command_call->background = 0;
+    command_call->owned_pipe_indexes = NULL;
     command_call->dependencies = NULL;
     command_call->dependencies_count = 0;
     command_call->stdin = STDIN_FILENO;
@@ -65,26 +69,7 @@ void destroy_command_call(command_call *command_call) {
 
     free(command_call->argv);
     free(command_call->command_string);
-    close_unused_file_descriptors(command_call);
-    free(command_call);
-}
-
-void soft_destroy_command_call(command_call *command_call) {
-    if (command_call == NULL) {
-        return;
-    }
-
-    for (size_t index = 0; index < command_call->argc; index++) {
-        free(command_call->argv[index]);
-    }
-
-    if (command_call->dependencies != NULL) {
-        free(command_call->dependencies);
-    }
-
-    free(command_call->argv);
-    free(command_call->command_string);
-    close_unused_file_descriptors(command_call);
+    free(command_call->owned_pipe_indexes);
     free(command_call);
 }
 
@@ -103,10 +88,7 @@ int is_internal_command(command_call *command_call) {
     return 0;
 }
 
-command_result *new_command_result(int exit_code, command_call *command_call) {
-    if (command_call == NULL) {
-        return NULL;
-    }
+command_result *new_command_result(int exit_code, command *command) {
     command_result *command_result = malloc(sizeof(*command_result));
     if (command_result == NULL) {
         perror("malloc");
@@ -114,9 +96,9 @@ command_result *new_command_result(int exit_code, command_call *command_call) {
     }
 
     command_result->exit_code = exit_code;
-    command_result->call = command_call;
     command_result->pid = UNINITIALIZED_PID;
     command_result->job_id = UNINITIALIZED_JOB_ID;
+    command_result->command = command;
     return command_result;
 }
 
@@ -124,8 +106,143 @@ void destroy_command_result(command_result *command_result) {
     if (command_result == NULL) {
         return;
     }
-    destroy_command_call(command_result->call);
+
+    destroy_command(command_result->command);
+
     free(command_result);
+}
+
+command *new_command(command_call *call, int **open_pipes, size_t open_pipes_size) {
+    command *command = malloc(sizeof(*command));
+
+    if (command == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    command->call = call;
+    command->open_pipes = open_pipes;
+    command->open_pipes_size = open_pipes_size;
+
+    return command;
+}
+
+void destroy_command(command *command) {
+    destroy_command_call(command->call);
+
+    for (size_t i = 0; i < command->open_pipes_size; i++) {
+        free(command->open_pipes[i]);
+    }
+
+    free(command->open_pipes);
+    free(command);
+}
+
+typedef struct command_call_builder {
+    command_call **dependencies;
+    int dependencies_count;
+
+    int *fds;
+    int *owned_pipe_indexes;
+
+} command_call_builder;
+
+command_call_builder *new_command_call_builder(size_t argc) {
+    command_call_builder *c = malloc(sizeof(command_call));
+
+    if (c == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    command_call **dependencies = malloc(argc * sizeof(command_call *));
+    if (dependencies == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+    size_t dependencies_count = 0;
+
+    int *owned_pipe_indexes = malloc(argc * sizeof(int));
+    if (owned_pipe_indexes == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    int *fds = malloc(3 * sizeof(int));
+    if (fds == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    fds[0] = -1;
+    fds[1] = -1;
+    fds[2] = -1;
+
+    c->dependencies = dependencies;
+    c->dependencies_count = dependencies_count;
+
+    c->fds = fds;
+    c->owned_pipe_indexes = owned_pipe_indexes;
+
+    return c;
+}
+
+void destroy_command_call_builder(command_call_builder *builder) {
+    free(builder->fds);
+    free(builder);
+}
+
+int trim_arrays(command_call_builder *builder) {
+    builder->dependencies = reallocarray(builder->dependencies, builder->dependencies_count, sizeof(command_call *));
+
+    if (builder->dependencies == NULL) {
+        perror("reallocarray");
+        return -1;
+    }
+
+    builder->owned_pipe_indexes = reallocarray(builder->owned_pipe_indexes, builder->dependencies_count, sizeof(int));
+
+    if (builder->owned_pipe_indexes == NULL) {
+        perror("reallocarray");
+        return -1;
+    }
+
+    return 0;
+}
+
+command_call *build_command(command_call_builder *builder, size_t argc, char **argv, char *command_string) {
+    command_call *command = new_command_call(argc, argv, command_string);
+    if (command == NULL) {
+        return NULL;
+    }
+
+    if (builder->fds[0] >= 0) {
+        command->stdin = builder->fds[0];
+    }
+    if (builder->fds[1] >= 0) {
+        command->stdout = builder->fds[1];
+    }
+    if (builder->fds[2] >= 0) {
+        command->stderr = builder->fds[2];
+    }
+
+    if (builder->dependencies_count == 0) {
+        free(builder->dependencies);
+        free(builder->owned_pipe_indexes);
+        return command;
+    }
+
+    int error = trim_arrays(builder);
+
+    if (error == -1) {
+        return NULL;
+    }
+
+    command->dependencies_count = builder->dependencies_count;
+    command->dependencies = builder->dependencies;
+    command->owned_pipe_indexes = builder->owned_pipe_indexes;
+
+    return command;
 }
 
 int parse_redirections(int *fds, char *redirection_symbol, char *filename) {
@@ -211,7 +328,131 @@ int parse_redirections(int *fds, char *redirection_symbol, char *filename) {
     return -1;
 }
 
-command_call *parse_command(char *command_string) {
+void update_dependencies(command_call_builder *builder, command_call *command_call, int index) {
+    if (builder == NULL) {
+        return;
+    }
+
+    builder->dependencies[builder->dependencies_count] = command_call;
+    builder->owned_pipe_indexes[builder->dependencies_count] = index;
+    builder->dependencies_count++;
+}
+
+int parse_command_substitution(command_call_builder *builder, char **command_string, size_t positions_left,
+                               size_t *index, int **open_pipes, size_t *total_pipes) {
+    size_t i;
+
+    int starts_found = 0;
+
+    for (i = 0; i < positions_left; i++) {
+
+        if (strcmp(command_string[i], COMMAND_SUBSTITUTION_START) == 0) {
+            starts_found++;
+        }
+        if (strcmp(command_string[i], COMMAND_SUBSTITUTION_END) == 0) {
+            if (starts_found == 0) {
+                break;
+            }
+            starts_found--;
+        }
+    }
+
+    // If we are at the end of the string or we have not found enough
+    // closing characters that means that the command is malformed.
+    if (i == positions_left || starts_found != 0) {
+        return -1;
+    }
+
+    int *fd = malloc(2 * sizeof(int));
+
+    if (fd == NULL) {
+        perror("malloc");
+        return -1;
+    }
+
+    if (pipe(fd) == -1) {
+        perror("pipe");
+        return -1;
+    }
+
+    int pipe_pos = *total_pipes;
+
+    open_pipes[*total_pipes] = fd;
+    *total_pipes += 1;
+
+    char *joined_command = join_strings(command_string, i, " ");
+    command_call *command = parse_command_call(joined_command, open_pipes, total_pipes);
+    free(joined_command);
+
+    if (command == NULL) {
+        return -1;
+    }
+
+    command->stdout = fd[1];
+
+    char *dev_file = malloc(PATH_MAX * sizeof(char));
+
+    if (dev_file == NULL) {
+        perror("malloc");
+        return -1;
+    }
+
+    snprintf(dev_file, PATH_MAX, "/dev/fd/%d", fd[0]);
+
+    free(command_string[i]);
+    command_string[i] = dev_file;
+
+    for (size_t j = 0; j < i; j++) {
+        free(command_string[j]);
+        command_string[j] = NULL;
+    }
+
+    *index = *index + i + 1;
+
+    update_dependencies(builder, command, pipe_pos);
+
+    return 0;
+}
+
+command *parse_command(char *command_string) {
+
+    string_iterator *iterator = new_string_iterator(command_string, COMMAND_SEPARATOR);
+    if (iterator == NULL) {
+        return NULL;
+    }
+    int max_open_pipes_size = get_number_of_words_left(iterator);
+    destroy_string_iterator(iterator);
+
+    int **open_pipes = malloc(max_open_pipes_size * sizeof(int *));
+    if (open_pipes == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+    size_t total_pipes = 0;
+
+    command_call *call = parse_command_call(command_string, open_pipes, &total_pipes);
+
+    if (call == NULL) {
+        free(open_pipes);
+        return NULL;
+    }
+
+    if (total_pipes == 0) {
+        free(open_pipes);
+        open_pipes = NULL;
+    } else {
+        open_pipes = reallocarray(open_pipes, total_pipes, sizeof(int *));
+
+        if (open_pipes == NULL) {
+            perror("reallocarray");
+            return NULL;
+        }
+    }
+
+    return new_command(call, open_pipes, total_pipes);
+}
+
+command_call *parse_command_call(char *command_string, int **open_pipes, size_t *total_pipes) {
     size_t argc;
     char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
     if (argc == 0) {
@@ -219,11 +460,11 @@ command_call *parse_command(char *command_string) {
         return NULL;
     }
 
-    int fds[3];
-
-    fds[0] = -1;
-    fds[1] = -1;
-    fds[2] = -1;
+    command_call_builder *command_builder = new_command_call_builder(argc);
+    if (command_builder == NULL) {
+        free(parsed_command_string);
+        return NULL;
+    }
 
     /*
      * For each argument,
@@ -253,19 +494,34 @@ command_call *parse_command(char *command_string) {
             return NULL;
         }
 
-        int status = parse_redirections(fds, parsed_command_string[index], parsed_command_string[index + 1]);
+        if (strcmp(parsed_command_string[index], COMMAND_SUBSTITUTION_START) == 0) {
+            free(parsed_command_string[index]);
+            parsed_command_string[index] = NULL;
 
-        if (status < 0) {
-            free(parsed_command_string);
-            return NULL;
+            if (parse_command_substitution(command_builder, parsed_command_string + index + 1, argc - index - 1, &index,
+                                           open_pipes, total_pipes) == -1) {
+
+                dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
+                free(parsed_command_string);
+                return NULL;
+            }
+
+        } else {
+            int status = parse_redirections(command_builder->fds, parsed_command_string[index],
+                                            parsed_command_string[index + 1]);
+
+            if (status < 0) {
+                free(parsed_command_string);
+                return NULL;
+            }
+
+            free(parsed_command_string[index]);
+            free(parsed_command_string[index + 1]);
+
+            parsed_command_string[index] = NULL;
+            parsed_command_string[index + 1] = NULL;
+            ++index;
         }
-
-        free(parsed_command_string[index]);
-        free(parsed_command_string[index + 1]);
-
-        parsed_command_string[index] = NULL;
-        parsed_command_string[index + 1] = NULL;
-        ++index;
     }
 
     int not_null_arguments = 0;
@@ -295,23 +551,14 @@ command_call *parse_command(char *command_string) {
 
     char *trimmed_command_string = trim_spaces(command_string);
     command_call *command =
-        new_command_call(not_null_arguments, redirection_parsed_command_string, trimmed_command_string);
+        build_command(command_builder, not_null_arguments, redirection_parsed_command_string, trimmed_command_string);
     free(trimmed_command_string);
-
-    if (fds[0] >= 0) {
-        command->stdin = fds[0];
-    }
-    if (fds[1] >= 0) {
-        command->stdout = fds[1];
-    }
-    if (fds[2] >= 0) {
-        command->stderr = fds[2];
-    }
+    destroy_command_call_builder(command_builder);
 
     return command;
 }
 
-command_call **parse_read_line(char *command_string, size_t *total_commands) {
+command **parse_read_line(char *command_string, size_t *total_commands) {
 
     if (starts_with(command_string, BACKGROUND_FLAG)) {
         *total_commands = 0;
@@ -327,7 +574,7 @@ command_call **parse_read_line(char *command_string, size_t *total_commands) {
         return NULL;
     }
 
-    command_call **commands = malloc(*total_commands * sizeof(command_call));
+    command **commands = malloc(*total_commands * sizeof(command_call));
     if (commands == NULL) {
         perror("malloc");
         for (size_t index = 0; index < *total_commands; ++index) {
@@ -353,7 +600,7 @@ command_call **parse_read_line(char *command_string, size_t *total_commands) {
                 }
             } else {
                 if ((int)((ssize_t)index) <= last_background_command_index) {
-                    commands[index]->background = 1;
+                    commands[index]->call->background = 1;
                 }
             }
         }

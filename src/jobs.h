@@ -15,7 +15,7 @@ char *job_status_to_string(job_status);
 typedef enum job_type { FOREGROUND, BACKGROUND } job_type;
 
 typedef struct subjob {
-    command_call *command;
+    char *command;
     pid_t pid;
     job_status last_status;
 } subjob;
@@ -44,11 +44,6 @@ job *new_job(size_t, job_type);
  *  Calls `destroy_subjob` on all the job's subjobs.
  */
 void destroy_job(job *);
-/**
- * Destroys the job and its subjobs but it does not
- * destroy the `command_call` associated to each subjob
- */
-void soft_destroy_job(job *);
 
 /** Prints the job to `fd`, following the format:
  *  [id] pid status command

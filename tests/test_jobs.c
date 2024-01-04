@@ -79,9 +79,9 @@ test_info *test_jobs() {
 void test_case_new_job(test_info *info) {
     print_test_name("Testing new_single_command_job");
 
-    command_call *command = parse_command("pwd");
-
-    job *job = new_single_command_job(command, 100, RUNNING, BACKGROUND);
+    command *command = parse_command("pwd");
+    job *job = new_single_command_job(command->call, 100, RUNNING, BACKGROUND);
+    destroy_command(command);
 
     handle_int_test(job->subjobs[0]->pid, 100, __LINE__, __FILE__, info);
     handle_int_test(job->id, 0, __LINE__, __FILE__, info);
@@ -92,9 +92,9 @@ void test_case_new_job(test_info *info) {
 void test_case_print_job(test_info *info) {
     print_test_name("Testing print_job");
 
-    command_call *command = parse_command("pwd yes");
-
-    job *job = new_single_command_job(command, 100, RUNNING, BACKGROUND);
+    command *command = parse_command("pwd yes");
+    job *job = new_single_command_job(command->call, 100, RUNNING, BACKGROUND);
+    destroy_command(command);
 
     job->id = 1;
 
@@ -145,9 +145,10 @@ void test_case_add_first_job(test_info *info) {
 
     init_job_table();
 
-    command_call *command = parse_command("pwd");
+    command *command = parse_command("pwd");
 
-    job *job = new_single_command_job(command, 100, RUNNING, BACKGROUND);
+    job *job = new_single_command_job(command->call, 100, RUNNING, BACKGROUND);
+    destroy_command(command);
 
     handle_int_test(add_job(job), 1, __LINE__, __FILE__, info);
 
@@ -171,8 +172,9 @@ void test_case_expand_job_table(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY + 1; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        jobs[i] = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        jobs[i] = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         handle_int_test(add_job(jobs[i]), i + 1, __LINE__, __FILE__, info);
     }
@@ -200,8 +202,9 @@ void test_case_expands_twice_job_table(test_info *info) {
     for (size_t i = 0; i < 2 * INITIAL_JOB_TABLE_CAPACITY + 1; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        jobs[i] = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        jobs[i] = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         add_job(jobs[i]);
     }
@@ -229,8 +232,9 @@ void test_case_job_table_only_expands_when_needed(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        job = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        job = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         add_job(job);
     }
@@ -248,9 +252,10 @@ void test_case_remove_job_only_one(test_info *info) {
 
     init_job_table();
 
-    command_call *command = parse_command("pwd");
+    command *command = parse_command("pwd");
 
-    job *job = new_single_command_job(command, 100, RUNNING, BACKGROUND);
+    job *job = new_single_command_job(command->call, 100, RUNNING, BACKGROUND);
+    destroy_command(command);
 
     add_job(job);
 
@@ -267,9 +272,10 @@ void test_case_remove_non_existent_job(test_info *info) {
 
     init_job_table();
 
-    command_call *command = parse_command("pwd");
+    command *command = parse_command("pwd");
 
-    job *job = new_single_command_job(command, 100, RUNNING, BACKGROUND);
+    job *job = new_single_command_job(command->call, 100, RUNNING, BACKGROUND);
+    destroy_command(command);
 
     add_job(job);
 
@@ -293,8 +299,9 @@ void test_case_remove_job_does_not_shift_jobs(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY + 1; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        jobs[i] = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        jobs[i] = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         add_job(jobs[i]);
     }
@@ -325,8 +332,9 @@ void test_case_remove_job_at_the_end_of_table(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        jobs[i] = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        jobs[i] = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         add_job(jobs[i]);
     }
@@ -356,8 +364,9 @@ void test_empty_job_table_with_remove_job(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY + 1; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        job = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        job = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         add_job(job);
     }
@@ -387,8 +396,9 @@ void remove_job_2_with_3_jobs(test_info *info) {
     for (size_t i = 0; i < 3; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        jobs[i] = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        jobs[i] = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         add_job(jobs[i]);
     }
@@ -419,8 +429,9 @@ void test_case_add_job_fills_null_position(test_info *info) {
     for (size_t i = 0; i < 3; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        jobs[i] = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        jobs[i] = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
 
         add_job(jobs[i]);
     }
@@ -431,8 +442,10 @@ void test_case_add_job_fills_null_position(test_info *info) {
 
     handle_int_test(job_table_size, 2, __LINE__, __FILE__, info);
 
-    command_call *command = parse_command("pwd new is here :)");
-    job *job = new_single_command_job(command, 103, RUNNING, BACKGROUND);
+    command *command = parse_command("pwd new is here :)");
+    job *job = new_single_command_job(command->call, 103, RUNNING, BACKGROUND);
+    destroy_command(command);
+
     handle_int_test(add_job(job), 2, __LINE__, __FILE__, info);
 
     handle_int_test(job_table_size, 3, __LINE__, __FILE__, info);
@@ -456,8 +469,10 @@ void test_case_filling_job_table_after_deleting_it(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        job *job = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        job *job = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
+
         add_job(job);
     }
 
@@ -472,8 +487,10 @@ void test_case_filling_job_table_after_deleting_it(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
         sprintf(buffer, "pwd %zu", i);
 
-        command_call *command = parse_command(buffer);
-        job *job = new_single_command_job(command, 100 + i, RUNNING, BACKGROUND);
+        command *command = parse_command(buffer);
+        job *job = new_single_command_job(command->call, 100 + i, RUNNING, BACKGROUND);
+        destroy_command(command);
+
         add_job(job);
     }
 
@@ -495,8 +512,8 @@ void test_jobs_command_without_jobs_running(test_info *info) {
 
     dup2(fd, STDOUT_FILENO);
 
-    command_call *command = parse_command("jobs");
-    command_result *result = execute_command_call(command);
+    command *command = parse_command("jobs");
+    command_result *result = execute_command(command);
 
     dup2(current_stdout, STDOUT_FILENO);
     close(current_stdout);
@@ -532,8 +549,8 @@ void test_jobs_command_with_jobs_running(test_info *info) {
     for (size_t i = 0; i < INITIAL_JOB_TABLE_CAPACITY; i++) {
         sprintf(command_buffer, "sleep %zu", i + 10);
 
-        command_call *command = parse_command(command_buffer);
-        command->background = 1;
+        command *command = parse_command(command_buffer);
+        command->call->background = 1;
         command_result *result = mute_command_execution(command);
 
         job *job = job_table[result->job_id - 1];
@@ -557,8 +574,8 @@ void test_jobs_command_with_jobs_running(test_info *info) {
 
     dup2(fd, STDOUT_FILENO);
 
-    command_call *command = parse_command("jobs");
-    command_result *result = execute_command_call(command);
+    command *command = parse_command("jobs");
+    command_result *result = execute_command(command);
 
     dup2(current_stdout, STDOUT_FILENO);
     close(current_stdout);

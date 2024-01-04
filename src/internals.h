@@ -24,16 +24,12 @@ extern int should_exit;
 extern const size_t LIMIT_PROMPT_SIZE;
 
 /** Executes the command call. */
-command_result *execute_command_call(command_call *command_call);
+command_result *execute_command(command *command);
+
+void close_unused_file_descriptors(command *command, command_call *command_call);
 
 /** Updates the command history with the given command result. */
 void update_command_history(command_result *command_result);
-
-/**
- * Given a `command_call`, close its file descriptors if they aren't used by
- * any other process.
- */
-void close_unused_file_descriptors(command_call *command);
 
 /** Defines all the internal variables default values. */
 void init_internals();

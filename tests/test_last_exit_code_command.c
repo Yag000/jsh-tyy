@@ -27,7 +27,7 @@ test_info *test_last_exit_code_command() {
 }
 
 void test_invalid_arguments(test_info *info) {
-    command_call *command;
+    command *command;
 
     command_result *result;
 
@@ -38,8 +38,8 @@ void test_invalid_arguments(test_info *info) {
 
     command = parse_command("? test");
     error_fd = open_test_file_to_write("test_last_exit_code_command_invalid_arguments.log");
-    command->stderr = error_fd;
-    result = execute_command_call(command);
+    command->call->stderr = error_fd;
+    result = execute_command(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
 
@@ -47,7 +47,7 @@ void test_invalid_arguments(test_info *info) {
 }
 
 void test_as_first_command(test_info *info) {
-    command_call *command;
+    command *command;
 
     command_result *result;
 
@@ -58,8 +58,8 @@ void test_as_first_command(test_info *info) {
 
     command = parse_command("?");
     out_fd = open_test_file_to_write("test_last_exit_code_command_as_first_command.log");
-    command->stdout = out_fd;
-    result = execute_command_call(command);
+    command->call->stdout = out_fd;
+    result = execute_command(command);
 
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
 
@@ -67,7 +67,7 @@ void test_as_first_command(test_info *info) {
 }
 
 void test_after_failed_command(test_info *info) {
-    command_call *command;
+    command *command;
 
     command_result *result;
 
@@ -79,15 +79,15 @@ void test_after_failed_command(test_info *info) {
 
     command = parse_command("? no arguments should be allowed");
     error_fd = open_test_file_to_write("test_last_exit_code_command_after_failed_command_errors.log");
-    command->stderr = error_fd;
-    result = execute_command_call(command);
+    command->call->stderr = error_fd;
+    result = execute_command(command);
 
     destroy_command_result(result);
 
     command = parse_command("?");
     out_fd = open_test_file_to_write("test_last_exit_code_command_after_failed_command.log");
-    command->stdout = out_fd;
-    result = execute_command_call(command);
+    command->call->stdout = out_fd;
+    result = execute_command(command);
 
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
 
@@ -103,7 +103,7 @@ void test_after_failed_command(test_info *info) {
 }
 
 void test_after_successful_command(test_info *info) {
-    command_call *command;
+    command *command;
 
     command_result *result;
 
@@ -113,16 +113,16 @@ void test_after_successful_command(test_info *info) {
     init_internals();
 
     command = parse_command("?");
-    command->stdout = out_fd;
-    result = execute_command_call(command);
+    command->call->stdout = out_fd;
+    result = execute_command(command);
 
     destroy_command_result(result);
 
     out_fd = open_test_file_to_write("test_last_exit_code_command_after_successful_command.log");
 
     command = parse_command("?");
-    command->stdout = out_fd;
-    result = execute_command_call(command);
+    command->call->stdout = out_fd;
+    result = execute_command(command);
 
     handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
 
