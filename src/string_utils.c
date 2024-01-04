@@ -44,7 +44,6 @@ int starts_with(char *string, const char *start) {
 
 /** Returns 0 if there are no more words in the string, 1 otherwise. */
 int has_next_word(string_iterator *iterator) {
-
     trim_start(iterator);
     return strlen(iterator->string) > 0;
 }

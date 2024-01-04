@@ -30,29 +30,25 @@ test_info *test_pwd() {
 }
 
 static void test_case_home(test_info *info) {
-    command_call *command, *cd_command;
+    command *command, *cd_command;
 
     print_test_name("Testing `cd && pwd`");
 
     // Get $HOME env var
     char *expected_path = getenv("HOME");
 
-    // Open log file
     int fd = open_test_file_to_write("test_pwd.log");
     cd_command = parse_command("cd");
-    cd(cd_command);
-    destroy_command_call(cd_command);
+    destroy_command_result(execute_command(cd_command));
 
     // Go to $HOME
     command = parse_command("pwd");
-    command->stdout = fd;
-    pwd(command);
-    destroy_command_call(command);
+    command->call->stdout = fd;
+    destroy_command_result(execute_command(command));
 
     // Go back to previous wd
     cd_command = parse_command("cd -");
-    cd(cd_command);
-    destroy_command_call(cd_command);
+    destroy_command_result(execute_command(cd_command));
 
     // Check log file
     int read_fd = open_test_file_to_read("test_pwd.log");
@@ -71,28 +67,24 @@ static void test_case_home(test_info *info) {
 }
 
 static void test_case_deeper(test_info *info) {
-    command_call *command, *cd_command;
+    command *command, *cd_command;
 
     print_test_name("Testing `cd tmp/dir && pwd`");
 
-    // Open log file
     int fd = open_test_file_to_write("test_pwd.log");
     cd_command = parse_command("cd tmp/dir");
-    cd(cd_command);
-    destroy_command_call(cd_command);
+    destroy_command_result(execute_command(cd_command));
 
     // Go to $HOME
     command = parse_command("pwd");
-    command->stdout = fd;
-    pwd(command);
-    destroy_command_call(command);
+    command->call->stdout = fd;
+    destroy_command_result(execute_command(command));
 
     char *expected_path = get_current_wd();
 
     // Go back to previous wd
     cd_command = parse_command("cd -");
-    cd(cd_command);
-    destroy_command_call(cd_command);
+    destroy_command_result(execute_command(cd_command));
 
     // Check log file
     int read_fd = open_test_file_to_read("test_pwd.log");
@@ -104,7 +96,7 @@ static void test_case_deeper(test_info *info) {
     // Check that there is nothing more than a newline char
     char buffer_newline[2];
     buffer_newline[1] = '\0';
-    int eof = read(fd, buffer_newline, 2);
+    int eof = read(read_fd, buffer_newline, 2);
     handle_int_test(1, eof, __LINE__, __FILE__, info);
     close(read_fd);
 
@@ -113,7 +105,7 @@ static void test_case_deeper(test_info *info) {
 }
 
 void test_invalid_arguments(test_info *info) {
-    command_call *command;
+    command *command;
     command_result *result;
 
     print_test_name("Testing `pwd([:whitespace:]+.+)+`");
@@ -122,8 +114,8 @@ void test_invalid_arguments(test_info *info) {
 
     command = parse_command("pwd test");
     int error_fd = open_test_file_to_write("test_last_exit_code_command_invalid_arguments.log");
-    command->stderr = error_fd;
-    result = execute_command_call(command);
+    command->call->stderr = error_fd;
+    result = execute_command(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
 

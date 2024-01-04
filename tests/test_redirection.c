@@ -40,10 +40,10 @@ void test_redirection_stdin(test_info *info) {
     int fd = open_test_file_to_read("test_redirection_input.log");
     int output_fd = open_test_file_to_write("test_redirection_input_out.log");
 
-    command_call *command = parse_command("cat");
-    command->stdin = fd;
-    command->stdout = output_fd;
-    command_result *result = execute_command_call(command);
+    command *command = parse_command("cat");
+    command->call->stdin = fd;
+    command->call->stdout = output_fd;
+    command_result *result = execute_command(command);
 
     destroy_command_result(result);
 
@@ -63,9 +63,9 @@ void test_redirection_stdout(test_info *info) {
 
     int fd = open_test_file_to_write("test_redirection_output.log");
 
-    command_call *command = parse_command("echo HelloWorld");
-    command->stdout = fd;
-    command_result *result = execute_command_call(command);
+    command *command = parse_command("echo HelloWorld");
+    command->call->stdout = fd;
+    command_result *result = execute_command(command);
 
     destroy_command_result(result);
 
@@ -86,9 +86,9 @@ void test_redirection_stderr(test_info *info) {
 
     int fd = open_test_file_to_write("test_redirection_error.log");
 
-    command_call *command = parse_command("mv .");
-    command->stderr = fd;
-    command_result *result = execute_command_call(command);
+    command *command = parse_command("mv .");
+    command->call->stderr = fd;
+    command_result *result = execute_command(command);
 
     destroy_command_result(result);
 

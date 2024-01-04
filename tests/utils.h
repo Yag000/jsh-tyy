@@ -7,13 +7,16 @@
 
 void handle_command_call_test(command_call *actual, command_call *expected, int line, const char *file,
                               test_info *info);
+
+void handle_command_test(command *actual, command *expected, int line, const char *file, test_info *info);
+
 void handle_command_result_test(command_result *actual, command_result *expected, int line, const char *file,
                                 test_info *info);
 void handle_job_test(job *actual, job *expected, int line, const char *file, test_info *info);
 
 void helper_mute_update_jobs(char *file_name);
 
-command_result *mute_command_execution(command_call *);
+command_result *mute_command_execution(command *);
 
 job *new_single_command_job(command_call *, pid_t, job_status, job_type);
 

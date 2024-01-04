@@ -54,10 +54,10 @@ void helper_mute_update_jobs(char *file_name) {
     close(fd);
 }
 
-command_result *helper_execute_bg(char *command) {
-    command_call *command_call = parse_command(command);
-    command_call->background = 1;
-    command_result *result = mute_command_execution(command_call);
+command_result *helper_execute_bg(char *scommand) {
+    command *command = parse_command(scommand);
+    command->call->background = 1;
+    command_result *result = mute_command_execution(command);
     return result;
 }
 
@@ -90,10 +90,10 @@ void test_case_are_jobs_running_one_instant_job(test_info *info) {
     init_job_table();
 
     int fd = open_test_file_to_write("test_running_jobs_one_instant_job_out.log");
-    command_call *command_call = parse_command("ls");
-    command_call->background = 1;
-    command_call->stdout = fd;
-    command_result *result = execute_command_call(command_call);
+    command *command = parse_command("ls");
+    command->call->background = 1;
+    command->call->stdout = fd;
+    command_result *result = execute_command(command);
 
     // Let the job finish
     sleep(1);
