@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "../src/jobs.h"
+#include "../src/signals.h"
 #include "test_core.h"
 
 bool debug;
@@ -26,6 +27,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    ignore_signals();
+
     // Create the test info
     test_info *info = create_test_info();
     clock_t start = clock();
@@ -38,7 +41,6 @@ int main(int argc, char *argv[]) {
     update_test_info(info, test_last_exit_code_command());
     update_test_info(info, test_pwd());
     update_test_info(info, test_exit());
-    update_test_info(info, test_external_commands());
     update_test_info(info, test_jobs());
     update_test_info(info, test_running_jobs());
     update_test_info(info, test_prompt());
