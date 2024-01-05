@@ -1,0 +1,4 @@
+#ENABLE VALGRIND
+$ echo abcdefghijkl >| test >> test
+$ ls
+$ cat test
