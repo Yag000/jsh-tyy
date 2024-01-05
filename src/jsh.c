@@ -1,6 +1,7 @@
 #include "internals.h"
 #include "jobs.h"
 #include "prompt.h"
+#include "signals.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -10,6 +11,8 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s\n", argv[0]);
         return EXIT_FAILURE;
     }
+
+    ignore_signals();
 
     init_internals();
     prompt();

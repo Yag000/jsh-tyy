@@ -47,7 +47,6 @@ test_info *test_last_exit_code_command();
 test_info *test_pwd();
 test_info *test_exit();
 test_info *test_utils();
-test_info *test_external_commands();
 test_info *test_jobs();
 test_info *test_prompt();
 test_info *test_background_jobs();

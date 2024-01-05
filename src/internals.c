@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -13,6 +12,7 @@
 #include "command.h"
 #include "internals.h"
 #include "jobs.h"
+#include "signals.h"
 #include "utils.h"
 
 int last_exit_code;
@@ -113,16 +113,64 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
         return 0;
     }
 
-    pid_t pid = fork();
+    // These 2 pipes ensure that the group is created at the right moment.
+    // The parent tells the child which pgid they should use,
+    // the child sets it and the tells the parent it's ok.
+    int fd[2];
+    int fd_2[2];
+    if (pipe(fd) == -1) {
+        perror("pipe");
+        return 0;
+    }
+    if (pipe(fd_2) == -1) {
+        perror("pipe");
+        return 0;
+    }
 
+    pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
         exit(1);
     }
 
     if (pid == 0) {
+        close(fd[1]);
+        close(fd_2[0]);
+
+        // Getting the pgid for this process
+        pid_t pgid;
+        if (read(fd[0], &pgid, sizeof(int)) != sizeof(int)) {
+            perror("read");
+            exit(1);
+        }
+        close(fd[0]);
+
+        // Every process in the job should be in the same process group.
+        if ((setpgid(0, pgid)) == -1) {
+            perror("setpgid");
+            exit(1);
+        }
+
+        // Telling the parent that the pgid has been set
+        if (write(fd_2[1], &pgid, sizeof(int)) != sizeof(int)) {
+            perror("write");
+            exit(1);
+        }
+
+        close(fd_2[1]);
+
         close_reading_pipes(command, command_call);
         close_writing_pipes(command, command_call, dependency_id);
+
+        // Putting the process to the foreground
+        if (command_call->background == 0) {
+            if (tcsetpgrp(STDERR_FILENO, pgid) == -1) {
+                perror("tcsetpgrp");
+                exit(1);
+            }
+        }
+
+        restore_signals();
 
         dup2(command_call->stdin, STDIN_FILENO);
         dup2(command_call->stdout, STDOUT_FILENO);
@@ -137,11 +185,26 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
         job->pgid = pid;
     }
 
-    // Every process in the job should be in the same process group.
-    if ((setpgid(pid, job->pgid)) == -1) {
-        perror("setpgid");
-        exit(1);
+    close(fd[0]);
+    close(fd_2[1]);
+
+    // Telling the child the pgid it should use
+    if (write(fd[1], &job->pgid, sizeof(int)) != sizeof(int)) {
+        perror("write");
+        return 0;
     }
+
+    close(fd[1]);
+
+    int dump;
+
+    // Waiting for the child to set the pgid
+    if (read(fd_2[0], &dump, sizeof(int)) != sizeof(int)) {
+        perror("read");
+        return 0;
+    }
+
+    close(fd_2[0]);
 
     return pid;
 }
@@ -221,6 +284,11 @@ command_result *execute_external_command(command *command) {
         int pid_ = waitpid(pid, &status, WUNTRACED);
         if (pid_ == -1) {
             perror("waitpid");
+            exit(1);
+        }
+
+        if (tcsetpgrp(STDERR_FILENO, getpid()) == -1) {
+            perror("tcsetpgrp");
             exit(1);
         }
 

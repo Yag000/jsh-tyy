@@ -1,0 +1,4 @@
+#ENABLE VALGRIND
+$ .data/true.sh
+$ cd .data 
+$ ./false.sh

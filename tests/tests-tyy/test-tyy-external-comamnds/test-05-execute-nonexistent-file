@@ -1,0 +1,4 @@
+#ENABLE VALGRIND
+#IGNORE STDERR
+$ ./idonotexistplease
+$ exit 0

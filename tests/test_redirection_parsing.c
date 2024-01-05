@@ -1,5 +1,6 @@
 #include "../src/command.h"
 #include "../src/internals.h"
+#include "../src/jobs.h"
 #include "test_core.h"
 
 #include <fcntl.h>
@@ -49,7 +50,12 @@ void test_parse_multiple_same_redirections(test_info *info) {
 
     command *command = parse_command("echo abcdefghijkl > tmp/output0 >> tmp/output1 >| tmp/output2");
 
+    command->call->background = 1;
+
     command_result *result = execute_command(command);
+
+    // Let the child process finish
+    sleep(1);
 
     int fd_output0 = open("tmp/output0", O_RDONLY);
     handle_boolean_test(1, fd_output0 >= 0, __LINE__, __FILE__, info);
@@ -74,4 +80,6 @@ void test_parse_multiple_same_redirections(test_info *info) {
     close(fd_output2);
 
     destroy_command_result(result);
+
+    init_job_table();
 }
