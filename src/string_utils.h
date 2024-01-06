@@ -4,6 +4,7 @@
 /** Struct that represents an iterator over a string.
  * It iterates over the words in the string, separated by the separator.
  */
+#include <inttypes.h>
 #include <stddef.h>
 
 typedef struct string_iterator {
@@ -68,5 +69,13 @@ int contains_string(const char *array[], size_t size, char *word);
  * If the string is empty, returns an empty string.
  */
 char *trim_spaces(const char *str);
+
+/**
+ * Parses an integer from a string.
+ * Stores the result in `res`.
+ * Returns 0 on errors and prints the error message to `fd`.
+ * Returns 1 on success.
+ */
+int parse_intmax_t(char *string, intmax_t *res, int fd);
 
 #endif // STRING_UTILS_H

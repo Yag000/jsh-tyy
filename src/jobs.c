@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -323,4 +324,66 @@ int jobs_command(command_call *command_call) {
     }
 
     return 0;
+}
+
+int put_job_in_foreground(job *job) {
+    if (job == NULL) {
+        return 0;
+    }
+
+    // Bring the job to the foreground
+    if (tcsetpgrp(STDERR_FILENO, job->pgid) == -1) {
+        perror("tcsetpgrp");
+        return 0;
+    }
+
+    // Set the job's type as the FOREGROUND process group
+    job->type = FOREGROUND;
+
+    // Wait for the job to be stopped or to be terminated
+    int status;
+    if (waitpid(job->pgid, &status, WUNTRACED) == -1) {
+        perror("waitpid");
+        return 0;
+    }
+
+    if (WIFEXITED(status)) {
+        destroy_job(job);
+    } else if (WIFSTOPPED(status)) {
+        if (job->subjobs == NULL || job->subjobs[0] == NULL) {
+            return 0;
+        }
+        job->subjobs[0]->last_status = STOPPED;
+    }
+
+    pid_t shell_pgid = getpgrp();
+    if (shell_pgid == -1) {
+        perror("getpgrp");
+        return 0;
+    }
+
+    // Bring the shell back to the foreground
+    if (tcsetpgrp(STDERR_FILENO, shell_pgid) == -1) {
+        perror("tcsetpgrp");
+        return 0;
+    }
+
+    return 1;
+}
+
+int continue_job_in_background(job *job) {
+    if (job == NULL) {
+        return 0;
+    }
+
+    // Send the job's group a SIGCONT signal
+    if (kill(-job->pgid, SIGCONT) == -1) {
+        perror("kill (SIGCONT)");
+        return 0;
+    }
+
+    // Set the job's type as the BACKGROUND process group
+    job->type = BACKGROUND;
+
+    return 1;
 }
