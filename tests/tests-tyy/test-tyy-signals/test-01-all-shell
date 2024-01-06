@@ -1,0 +1,13 @@
+#ENABLE VALGRIND
+$ true
+$+SIGTERM
+$ false
+$+SIGTTIN
+$ false
+$+SIGQUIT
+$ false
+$+SIGTTOU
+$ false
+$+SIGTSTP
+$ false
+$ exit 0
