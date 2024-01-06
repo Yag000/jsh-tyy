@@ -1,0 +1,22 @@
+#IGNORE STDERR
+#IGNORE STDOUT
+$ true
+$ cat
+>+SIGINT
+$ false
+$ cat
+>+SIGTERM
+$ false
+$ cat
+>+SIGTTIN
+$ false
+$ cat
+>+SIGQUIT
+$ false
+$ cat
+>+SIGTTOU
+$ false
+$ cat
+>+SIGTSTP
+$ false
+$ exit 0

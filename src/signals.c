@@ -4,31 +4,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void ignore_signals() {
-    // TODO: Ignore every shell sigaction
-    struct sigaction sa = {0};
-    sa.sa_handler = SIG_IGN;
-    if (sigaction(SIGTTOU, &sa, NULL) == -1) {
-        perror("sigaction");
+sigset_t original_mask;
+
+void safe_sigaddset(sigset_t *set, int sig) {
+    if (sigaddset(set, sig) == -1) {
+        perror("sigaddset");
         exit(1);
     }
-    if (sigaction(SIGTTIN, &sa, NULL) == -1) {
-        perror("sigaction");
+}
+
+void ignore_signals() {
+    sigset_t block_mask;
+    if (sigemptyset(&block_mask) == -1) {
+        perror("sigemptyset");
+        exit(1);
+    }
+
+    safe_sigaddset(&block_mask, SIGINT);
+    safe_sigaddset(&block_mask, SIGTERM);
+    safe_sigaddset(&block_mask, SIGTTIN);
+    safe_sigaddset(&block_mask, SIGQUIT);
+    safe_sigaddset(&block_mask, SIGTTOU);
+    safe_sigaddset(&block_mask, SIGTSTP);
+
+    /*
+        NOTE:
+        This might not be a good idea if we will need to wait for a signal to be
+        delivered as this does not guarantee atomicity.
+        If we need to wait atomically, see sigsuspend.
+    */
+    // Modify the signal mask to block every signal in block_mask
+    if (sigprocmask(SIG_BLOCK, &block_mask, &original_mask) == -1) {
+        perror("sigprocmask");
         exit(1);
     }
 }
 
 void restore_signals() {
-    // TODO: Restore every sigaction
-    struct sigaction sa = {0};
-    sa.sa_handler = SIG_DFL;
-    if (sigaction(SIGTTOU, &sa, NULL) == -1) {
-        perror("sigaction");
-        exit(1);
-    }
-
-    if (sigaction(SIGTTIN, &sa, NULL) == -1) {
-        perror("sigaction");
+    if (sigprocmask(SIG_SETMASK, &original_mask, NULL) == -1) {
+        perror("sigprocmask");
         exit(1);
     }
 }
