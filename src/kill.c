@@ -12,35 +12,6 @@
 
 int call_stderr;
 
-int parse_int(char *string, intmax_t *res) {
-    char *endptr;
-
-    errno = 0; // Reset errno
-    intmax_t result = strtoimax(string, &endptr, 10);
-
-    // Flow guard
-    if (errno == ERANGE && (INTMAX_MIN == result || INTMAX_MAX == result)) {
-        dprintf(call_stderr, "kill: strtoimax overflow.\n");
-        return 0;
-    }
-
-    // Error guard
-    if (errno != 0) {
-        dprintf(call_stderr, "kill: strtoimax failure.\n");
-        return 0;
-    }
-
-    // Invalid characters guard
-    if (*endptr != '\0') {
-        dprintf(call_stderr, "kill: %s: invalid characters present.\n", string);
-        return 0;
-    }
-
-    *res = result;
-
-    return 1;
-}
-
 int kill_query(pid_t pid, int sig) {
     if ((kill(pid, sig)) == -1) {
         switch (errno) {
@@ -92,7 +63,7 @@ int kill_command(command_call *command_call) {
 
     // Signal given by user
     if (starts_with(command_call->argv[1], "-")) {
-        if ((parse_int(command_call->argv[1] + 1, &parsed_value)) == 0) {
+        if ((parse_intmax_t(command_call->argv[1] + 1, &parsed_value, call_stderr)) == 0) {
             return 1;
         }
 
@@ -109,7 +80,7 @@ int kill_command(command_call *command_call) {
     // Check job or pid
     if (starts_with(command_call->argv[identifier_index], "%")) { // job
 
-        if ((parse_int(command_call->argv[identifier_index] + 1, &parsed_value)) == 0) {
+        if ((parse_intmax_t(command_call->argv[identifier_index] + 1, &parsed_value, call_stderr)) == 0) {
             return 1;
         }
 
@@ -122,7 +93,7 @@ int kill_command(command_call *command_call) {
         return kill_job(job_id, sig) ? 0 : 1;
     } else { // pid
 
-        if ((parse_int(command_call->argv[identifier_index], &parsed_value)) == 0) {
+        if ((parse_intmax_t(command_call->argv[identifier_index], &parsed_value, call_stderr)) == 0) {
             return 1;
         }
 

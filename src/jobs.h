@@ -98,4 +98,18 @@ void update_jobs();
  * */
 int are_jobs_running();
 
+/**
+ * Puts the job to the foreground.
+ * Returns 1 if the job was put in the foreground,
+ * 0 otherwise.
+ */
+int put_job_in_foreground(job *);
+
+/**
+ * Continues the job int the background.
+ * Returns 1 if we were able to continue the job in the background,
+ * 0 otherwise.
+ */
+int continue_job_in_background(job *);
+
 #endif // JOBS_H

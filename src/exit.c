@@ -1,3 +1,5 @@
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -5,6 +7,7 @@
 #include "command.h"
 #include "internals.h"
 #include "jobs.h"
+#include "string_utils.h"
 
 int exit_command(command_call *command_call) {
 
@@ -34,18 +37,18 @@ int exit_command(command_call *command_call) {
     }
 
     if (command_call->argc == 2) {
-        char *endptr;
-        int converted_exit_code = strtol(command_call->argv[1], &endptr, 10);
-        if (*endptr != '\0') {
-            dprintf(command_call->stderr, "exit: %s: numeric argument required\n", command_call->argv[1]);
+        intmax_t parsed_value;
+        if (parse_intmax_t(command_call->argv[1], &parsed_value, command_call->stderr) == 0) {
             return 1;
         }
-        if (converted_exit_code < 0 || converted_exit_code > 255) {
+
+        if (parsed_value < 0 || parsed_value > 255) {
             dprintf(command_call->stderr, "exit: %s: number between 0 and 255 (inclusive) required\n",
                     command_call->argv[1]);
             return 1;
         }
-        last_exit_code = converted_exit_code;
+
+        last_exit_code = parsed_value;
         should_exit = 1;
     }
 
