@@ -1,4 +1,6 @@
 #include "string_utils.h"
+#include <errno.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -284,4 +286,40 @@ char *trim_spaces(const char *str) {
     trimmed[new_len] = '\0';
 
     return trimmed;
+}
+
+int parse_intmax_t(char *string, intmax_t *res, int fd) {
+    char *endptr;
+
+    errno = 0; // Reset errno
+    intmax_t result = strtoimax(string, &endptr, 10);
+
+    // Flow guard
+    if (errno == ERANGE) {
+        if (INTMAX_MIN == result) {
+            dprintf(fd, "strtoimax underflow.\n");
+        }
+
+        if (INTMAX_MAX == result) {
+            dprintf(fd, "strtoimax overflow.\n");
+        }
+
+        return 0;
+    }
+
+    // Error guard
+    if (errno != 0) {
+        dprintf(fd, "strtoimax failure.\n");
+        return 0;
+    }
+
+    // Invalid characters guard
+    if (*endptr != '\0') {
+        dprintf(fd, "%s: invalid characters present.\n", string);
+        return 0;
+    }
+
+    *res = result;
+
+    return 1;
 }
