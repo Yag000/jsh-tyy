@@ -81,4 +81,6 @@ int jobs_command(command_call *command_call);
  */
 int kill_command(command_call *command_call);
 
+int fg_command(command_call *command_call);
+
 #endif // INTERNALS_H
