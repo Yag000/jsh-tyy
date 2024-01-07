@@ -337,6 +337,12 @@ int put_job_in_foreground(job *job) {
         return 0;
     }
 
+    // Send the job's group a SIGCONT signal
+    if (kill(-job->pgid, SIGCONT) == -1) {
+        perror("kill (SIGCONT)");
+        return 0;
+    }
+
     // Set the job's type as the FOREGROUND process group
     job->type = FOREGROUND;
 
@@ -348,12 +354,13 @@ int put_job_in_foreground(job *job) {
     }
 
     if (WIFEXITED(status)) {
-        destroy_job(job);
+        remove_job(job->id);
     } else if (WIFSTOPPED(status)) {
         if (job->subjobs == NULL || job->subjobs[0] == NULL) {
             return 0;
         }
         job->subjobs[0]->last_status = STOPPED;
+        print_job(job, STDERR_FILENO);
     }
 
     pid_t shell_pgid = getpgrp();

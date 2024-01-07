@@ -67,6 +67,8 @@ int execute_internal_command(command_call *command_call) {
         exit_code = jobs_command(command_call);
     } else if (strcmp(command_call->name, "kill") == 0) {
         exit_code = kill_command(command_call);
+    } else if (strcmp(command_call->name, "fg") == 0) {
+        exit_code = fg_command(command_call);
     }
 
     return exit_code;
