@@ -297,11 +297,11 @@ int parse_intmax_t(char *string, intmax_t *res, int fd) {
     // Flow guard
     if (errno == ERANGE) {
         if (INTMAX_MIN == result) {
-            dprintf(fd, "strtoimax underflow.\n");
+            dprintf(fd, "strtoimax: underflow.\n");
         }
 
         if (INTMAX_MAX == result) {
-            dprintf(fd, "strtoimax overflow.\n");
+            dprintf(fd, "strtoimax: overflow.\n");
         }
 
         return 0;
@@ -309,13 +309,13 @@ int parse_intmax_t(char *string, intmax_t *res, int fd) {
 
     // Error guard
     if (errno != 0) {
-        dprintf(fd, "strtoimax failure.\n");
+        dprintf(fd, "strtoimax: failure.\n");
         return 0;
     }
 
     // Invalid characters guard
     if (*endptr != '\0') {
-        dprintf(fd, "%s: invalid characters present.\n", string);
+        dprintf(fd, "strtoimax: %s: invalid characters present.\n", string);
         return 0;
     }
 
