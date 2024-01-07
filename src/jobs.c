@@ -7,6 +7,7 @@
 
 #include "command.h"
 #include "jobs.h"
+#include "string_utils.h"
 
 void destroy_job_table();
 
@@ -392,5 +393,45 @@ int continue_job_in_background(job *job) {
     // Set the job's type as the BACKGROUND process group
     job->type = BACKGROUND;
 
+    if (job->subjobs == NULL || job->subjobs[0] == NULL) {
+        return 0;
+    }
+    job->subjobs[0]->last_status = RUNNING;
+
     return 1;
+}
+
+job *get_job(char *job_id_string, int error_fd) {
+    // Check if job id starts with %
+    if (!starts_with(job_id_string, "%")) {
+        dprintf(error_fd, "invalid job id (missing %%)\n");
+        return NULL;
+    }
+
+    // Parse job id
+    intmax_t parsed_value;
+    if ((parse_intmax_t(job_id_string + 1, &parsed_value, error_fd)) == 0) {
+        return NULL;
+    }
+
+    // Negative job id
+    if (parsed_value < 0) {
+        dprintf(error_fd, "%ju:%%job can't be negative.\n", parsed_value);
+        return NULL;
+    }
+
+    size_t job_id = parsed_value;
+    // Invalid job_id
+    if (job_id < 1 || job_id > job_table_capacity || job_table_size == 0 || job_table == NULL) {
+        dprintf(error_fd, "%%%zu: invalid job_id.\n", job_id);
+        return NULL;
+    }
+
+    // Job doesn't exist
+    if (job_table[job_id - 1] == NULL) {
+        dprintf(error_fd, "%%%zu: no such job.", job_id);
+        return NULL;
+    }
+
+    return job_table[job_id - 1];
 }

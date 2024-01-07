@@ -1,10 +1,5 @@
-#include <asm-generic/errno-base.h>
 #include <errno.h>
-#include <inttypes.h>
 #include <signal.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "internals.h"
 #include "jobs.h"
@@ -28,24 +23,6 @@ int kill_query(pid_t pid, int sig) {
     }
 
     return 1;
-}
-
-int kill_job(size_t job_id, int sig) {
-    // Invalid job_id
-    if (job_id < 1 || job_id > job_table_capacity || job_table_size == 0 || job_table == NULL) {
-        dprintf(call_stderr, "kill: %%%zu: invalid job_id.\n", job_id);
-        return 0;
-    }
-
-    // Job doesn't exist
-    if (job_table[job_id - 1] == NULL) {
-        dprintf(call_stderr, "kill: %%%zu: no such job.", job_id);
-        return 0;
-    }
-
-    pid_t to_kill = job_table[job_id - 1]->pgid;
-
-    return kill_query(-to_kill, sig); // Kill the group
 }
 
 int kill_command(command_call *command_call) {
@@ -78,26 +55,22 @@ int kill_command(command_call *command_call) {
     }
 
     // Check job or pid
+    pid_t id_to_kill;
     if (starts_with(command_call->argv[identifier_index], "%")) { // job
-
-        if ((parse_intmax_t(command_call->argv[identifier_index] + 1, &parsed_value, call_stderr)) == 0) {
+        job *job = get_job(command_call->argv[identifier_index], call_stderr);
+        if (job == NULL) {
             return 1;
         }
 
-        if (parsed_value < 0) {
-            dprintf(call_stderr, "kill: %ju:%%job can't be negative.\n", parsed_value);
-            return 1;
-        }
+        id_to_kill = -job->pgid; // -pgid to send the signal to the whole process group
 
-        size_t job_id = parsed_value;
-        return kill_job(job_id, sig) ? 0 : 1;
     } else { // pid
-
         if ((parse_intmax_t(command_call->argv[identifier_index], &parsed_value, call_stderr)) == 0) {
             return 1;
         }
 
-        pid_t pid = parsed_value;
-        return kill_query(pid, sig) ? 0 : 1;
+        id_to_kill = parsed_value;
     }
+
+    return kill_query(id_to_kill, sig) ? 0 : 1;
 }

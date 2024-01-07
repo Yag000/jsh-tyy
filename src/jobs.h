@@ -112,4 +112,11 @@ int put_job_in_foreground(job *);
  */
 int continue_job_in_background(job *);
 
+/**
+ * Returns the job with the given job number.
+ * If there is no job with that job number or an error occured,
+ * returns NULL.
+ */
+job *get_job(char *job_id_string, int error_fd);
+
 #endif // JOBS_H

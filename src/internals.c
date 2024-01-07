@@ -53,7 +53,6 @@ command_result *execute_command(command *command) {
 /** Executes an internal command call. */
 int execute_internal_command(command_call *command_call) {
     int exit_code = 0;
-    /** TODO: Implement the remaining internal commands. */
 
     if (strcmp(command_call->name, "cd") == 0) {
         exit_code = cd(command_call);
@@ -69,6 +68,8 @@ int execute_internal_command(command_call *command_call) {
         exit_code = kill_command(command_call);
     } else if (strcmp(command_call->name, "fg") == 0) {
         exit_code = fg_command(command_call);
+    } else if (strcmp(command_call->name, "bg") == 0) {
+        exit_code = bg_command(command_call);
     }
 
     return exit_code;
