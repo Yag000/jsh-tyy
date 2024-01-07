@@ -4,45 +4,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-sigset_t original_mask;
+#define NB_SIGNALS_TO_IGNORE 6
+const int signals_to_ignore[NB_SIGNALS_TO_IGNORE] = {SIGINT, SIGTERM, SIGTTIN, SIGQUIT, SIGTTOU, SIGTSTP};
 
-void safe_sigaddset(sigset_t *set, int sig) {
-    if (sigaddset(set, sig) == -1) {
-        perror("sigaddset");
-        exit(1);
+void set_signal_actions(struct sigaction *sa) {
+    for (int i = 0; i < NB_SIGNALS_TO_IGNORE; i++) {
+        if (sigaction(signals_to_ignore[i], sa, NULL) == -1) {
+            perror("sigaction");
+            exit(1);
+        }
     }
 }
 
 void ignore_signals() {
-    sigset_t block_mask;
-    if (sigemptyset(&block_mask) == -1) {
-        perror("sigemptyset");
-        exit(1);
-    }
-
-    safe_sigaddset(&block_mask, SIGINT);
-    safe_sigaddset(&block_mask, SIGTERM);
-    safe_sigaddset(&block_mask, SIGTTIN);
-    safe_sigaddset(&block_mask, SIGQUIT);
-    safe_sigaddset(&block_mask, SIGTTOU);
-    safe_sigaddset(&block_mask, SIGTSTP);
-
-    /*
-        NOTE:
-        This might not be a good idea if we will need to wait for a signal to be
-        delivered as this does not guarantee atomicity.
-        If we need to wait atomically, see sigsuspend.
-    */
-    // Modify the signal mask to block every signal in block_mask
-    if (sigprocmask(SIG_BLOCK, &block_mask, &original_mask) == -1) {
-        perror("sigprocmask");
-        exit(1);
-    }
+    struct sigaction sa = {0};
+    sa.sa_handler = SIG_IGN;
+    set_signal_actions(&sa);
 }
 
 void restore_signals() {
-    if (sigprocmask(SIG_SETMASK, &original_mask, NULL) == -1) {
-        perror("sigprocmask");
-        exit(1);
-    }
+    struct sigaction sa = {0};
+    sa.sa_handler = SIG_DFL;
+    set_signal_actions(&sa);
 }
