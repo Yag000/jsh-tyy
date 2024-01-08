@@ -31,7 +31,8 @@ command_call *new_command_call(size_t argc, char **argv, char *command_string) {
     command_call->argc = argc;
     command_call->argv = argv;
     command_call->background = 0;
-    command_call->owned_pipe_indexes = NULL;
+    command_call->reading_pipes = NULL;
+    command_call->writing_pipes = NULL;
     command_call->dependencies = NULL;
     command_call->dependencies_count = 0;
     command_call->stdin = STDIN_FILENO;
@@ -69,7 +70,8 @@ void destroy_command_call(command_call *command_call) {
 
     free(command_call->argv);
     free(command_call->command_string);
-    free(command_call->owned_pipe_indexes);
+    destroy_pipe_info(command_call->reading_pipes);
+    destroy_pipe_info(command_call->writing_pipes);
     free(command_call);
 }
 
@@ -143,7 +145,8 @@ typedef struct command_call_builder {
     int dependencies_count;
 
     int *fds;
-    int *owned_pipe_indexes;
+    pipe_info *reading_pipes;
+    pipe_info *writing_pipes;
 
 } command_call_builder;
 
@@ -162,9 +165,13 @@ command_call_builder *new_command_call_builder(size_t argc) {
     }
     size_t dependencies_count = 0;
 
-    int *owned_pipe_indexes = malloc(argc * sizeof(int));
-    if (owned_pipe_indexes == NULL) {
-        perror("malloc");
+    pipe_info *reading_pipe_info = new_pipe_info();
+    if (reading_pipe_info == NULL) {
+        return NULL;
+    }
+
+    pipe_info *writing_pipe_info = new_pipe_info();
+    if (writing_pipe_info == NULL) {
         return NULL;
     }
 
@@ -182,7 +189,8 @@ command_call_builder *new_command_call_builder(size_t argc) {
     c->dependencies_count = dependencies_count;
 
     c->fds = fds;
-    c->owned_pipe_indexes = owned_pipe_indexes;
+    c->reading_pipes = reading_pipe_info;
+    c->writing_pipes = writing_pipe_info;
 
     return c;
 }
@@ -192,17 +200,64 @@ void destroy_command_call_builder(command_call_builder *builder) {
     free(builder);
 }
 
+pipe_info *new_pipe_info() {
+    pipe_info *pi = malloc(sizeof(pipe_info));
+
+    if (pi == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    pi->pipes = NULL;
+    pi->pipe_count = 0;
+    return pi;
+}
+
+void destroy_pipe_info(pipe_info *pi) {
+    if (pi == NULL) {
+        return;
+    }
+
+    if (pi->pipes != NULL) {
+        free(pi->pipes);
+    }
+    free(pi);
+}
+
+void add_pipe(pipe_info *pi, int index) {
+    if (pi == NULL) {
+        return;
+    }
+
+    if (pi->pipes == NULL) {
+        pi->pipes = malloc(sizeof(int));
+
+        if (pi->pipes == NULL) {
+            perror("malloc");
+            return;
+        }
+
+        pi->pipes[0] = index;
+        pi->pipe_count++;
+        return;
+    }
+
+    pi->pipes = reallocarray(pi->pipes, pi->pipe_count + 1, sizeof(int));
+
+    if (pi->pipes == NULL) {
+        perror("reallocarray");
+        return;
+    }
+
+    pi->pipes[pi->pipe_count] = index;
+    pi->pipe_count++;
+    return;
+}
+
 int trim_arrays(command_call_builder *builder) {
     builder->dependencies = reallocarray(builder->dependencies, builder->dependencies_count, sizeof(command_call *));
 
     if (builder->dependencies == NULL) {
-        perror("reallocarray");
-        return -1;
-    }
-
-    builder->owned_pipe_indexes = reallocarray(builder->owned_pipe_indexes, builder->dependencies_count, sizeof(int));
-
-    if (builder->owned_pipe_indexes == NULL) {
         perror("reallocarray");
         return -1;
     }
@@ -226,9 +281,11 @@ command_call *build_command(command_call_builder *builder, size_t argc, char **a
         command->stderr = builder->fds[2];
     }
 
+    command->writing_pipes = builder->writing_pipes;
+    command->reading_pipes = builder->reading_pipes;
+
     if (builder->dependencies_count == 0) {
         free(builder->dependencies);
-        free(builder->owned_pipe_indexes);
         return command;
     }
 
@@ -240,7 +297,6 @@ command_call *build_command(command_call_builder *builder, size_t argc, char **a
 
     command->dependencies_count = builder->dependencies_count;
     command->dependencies = builder->dependencies;
-    command->owned_pipe_indexes = builder->owned_pipe_indexes;
 
     return command;
 }
@@ -334,7 +390,8 @@ void update_dependencies(command_call_builder *builder, command_call *command_ca
     }
 
     builder->dependencies[builder->dependencies_count] = command_call;
-    builder->owned_pipe_indexes[builder->dependencies_count] = index;
+    add_pipe(builder->reading_pipes, index);
+    add_pipe(command_call->writing_pipes, index);
     builder->dependencies_count++;
 }
 
@@ -363,6 +420,8 @@ int parse_command_substitution(command_call_builder *builder, char **command_str
         return -1;
     }
 
+    int pipe_pos = *total_pipes;
+
     int *fd = malloc(2 * sizeof(int));
 
     if (fd == NULL) {
@@ -374,8 +433,6 @@ int parse_command_substitution(command_call_builder *builder, char **command_str
         perror("pipe");
         return -1;
     }
-
-    int pipe_pos = *total_pipes;
 
     open_pipes[*total_pipes] = fd;
     *total_pipes += 1;
@@ -628,7 +685,8 @@ command **parse_read_line(char *command_string, size_t *total_commands) {
         return NULL;
     }
 
-    commands = reallocarray(commands, --*total_commands, sizeof(command_call));
+    *total_commands -= 1;
+    commands = reallocarray(commands, *total_commands, sizeof(command_call));
 
     if (commands == NULL) {
         perror("reallocarray");

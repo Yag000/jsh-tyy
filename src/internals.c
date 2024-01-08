@@ -81,34 +81,34 @@ void close_reading_pipes(command *command, command_call *command_call) {
     }
 
     for (size_t i = 0; i < command->open_pipes_size; i++) {
-        if (contains(command_call->owned_pipe_indexes, command_call->dependencies_count, i)) {
+        if (contains(command_call->reading_pipes->pipes, command_call->reading_pipes->pipe_count, i)) {
             continue;
         }
         if (command->open_pipes[i] == NULL) {
             continue;
         }
-
         close(command->open_pipes[i][0]);
     }
 }
 
-void close_writing_pipes(command *command, command_call *command_call, size_t dependency_id) {
+void close_writing_pipes(command *command, command_call *command_call) {
     if (command == NULL || command->open_pipes == NULL || command->open_pipes_size == 0 || command_call == NULL) {
         return;
     }
 
     for (size_t i = 0; i < command->open_pipes_size; i++) {
-        if (i + 1 == dependency_id) {
+        if (contains(command_call->writing_pipes->pipes, command_call->writing_pipes->pipe_count, i)) {
             continue;
         }
         if (command->open_pipes[i] == NULL) {
             continue;
         }
+
         close(command->open_pipes[i][1]);
     }
 }
 
-pid_t execute_single_command(command *command, command_call *command_call, job *job, int dependency_id) {
+pid_t execute_single_command(command *command, command_call *command_call, job *job) {
     // TODO: Solve this gracefully and properly. When implementing pipelines, this could be
     // a problem. (see !65)
     if (is_internal_command(command_call)) {
@@ -163,7 +163,7 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
         close(fd_2[1]);
 
         close_reading_pipes(command, command_call);
-        close_writing_pipes(command, command_call, dependency_id);
+        close_writing_pipes(command, command_call);
 
         // Putting the process to the foreground
         if (command_call->background == 0) {
@@ -232,7 +232,7 @@ pid_t execute_as_job(command *command, command_call *command_call, job *job) {
     // more graceful).
     assert(index < job->subjobs_size);
 
-    pid_t pid = execute_single_command(command, command_call, job, index);
+    pid_t pid = execute_single_command(command, command_call, job);
 
     if (pid != 0) {
         subjob *subjob = new_subjob(command_call, pid, RUNNING);

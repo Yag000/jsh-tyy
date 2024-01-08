@@ -29,9 +29,9 @@ typedef struct command_call {
     char *command_string;
     struct command_call **dependencies;
     size_t dependencies_count;
-    int *owned_pipe_indexes; // Array of indexes of the array 'open_pipes' that represent the pipes the command controls
-                             // directly (communication with it's direct dependencies)
-    int background;          // 1 if the command is to be executed in background, 0 otherwise
+    struct pipe_info *reading_pipes;
+    struct pipe_info *writing_pipes;
+    int background; // 1 if the command is to be executed in background, 0 otherwise
     int stdin;
     int stdout;
     int stderr;
@@ -97,5 +97,16 @@ command_result *new_command_result(int exit_code, command *command);
  *  Calls `destroy_command_call` to free `command_result-> call`.
  */
 void destroy_command_result(command_result *command_result);
+
+typedef struct pipe_info {
+    int *pipes;
+    size_t pipe_count;
+} pipe_info;
+
+pipe_info *new_pipe_info();
+
+void destroy_pipe_info(pipe_info *);
+
+void add_pipe(pipe_info *, int);
 
 #endif // COMMAND_H
