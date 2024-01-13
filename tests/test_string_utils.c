@@ -22,6 +22,8 @@ void test_case_trim_start_trim_spaces(test_info *info);
 void test_case_trim_end_trim_spaces(test_info *info);
 void test_case_trim_both_trim_spaces(test_info *info);
 
+void test_case_string_made_of(test_info *info);
+
 test_info *test_string_utils() {
     // Test setup
     print_test_header("string_utils");
@@ -45,6 +47,7 @@ test_info *test_string_utils() {
     test_case_trim_start_trim_spaces(info);
     test_case_trim_end_trim_spaces(info);
     test_case_trim_both_trim_spaces(info);
+    test_case_string_made_of(info);
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
@@ -582,4 +585,43 @@ void test_case_trim_both_trim_spaces(test_info *info) {
     result = trim_spaces("   a a  ");
     handle_string_test("a a", result, __LINE__, __FILE__, info);
     free(result);
+}
+
+void test_case_string_made_of(test_info *info) {
+    int result;
+
+    print_test_name("Testing `is_only_composed_of`");
+
+    result = is_only_composed_of("      ", " ");
+    handle_int_test(1, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("", "a");
+    handle_int_test(1, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("aaaaaaa", "a");
+    handle_int_test(1, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("@@@", "@@");
+    handle_int_test(0, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of(" ", "a");
+    handle_int_test(0, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("aaaabaa", "a");
+    handle_int_test(0, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("baaaaaa", "a");
+    handle_int_test(0, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("aaaaaab", "a");
+    handle_int_test(0, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("aaaaaa", "a");
+    handle_int_test(1, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("abababab", "ab");
+    handle_int_test(1, result, __LINE__, __FILE__, info);
+
+    result = is_only_composed_of("ababababa", "ab");
+    handle_int_test(0, result, __LINE__, __FILE__, info);
 }

@@ -40,7 +40,7 @@ void trim_start(string_iterator *iterator) {
 }
 
 /** Checks if a string starts with a special pattern. */
-int starts_with(char *string, const char *start) {
+int starts_with(const char *string, const char *start) {
     return strncmp(string, start, strlen(start)) == 0 ? 1 : 0;
 }
 
@@ -321,5 +321,16 @@ int parse_intmax_t(char *string, intmax_t *res, int fd) {
 
     *res = result;
 
+    return 1;
+}
+
+int is_only_composed_of(const char *str, const char *pattern) {
+    size_t index = 0;
+    while (index < strlen(str)) {
+        if (!starts_with(str + index, pattern)) {
+            return 0;
+        }
+        index += strlen(pattern);
+    }
     return 1;
 }

@@ -65,6 +65,8 @@ test_professor:
   script:
     - echo "Run professors tests"
     - TEST_FOLDER_FILTER=jalon make test-professor
+    - TEST_FOLDER_FILTER=rendu-final-A make test-professor
+    - TEST_FOLDER_FILTER=rendu-final-D make test-professor
 
 ### Format stage
 #

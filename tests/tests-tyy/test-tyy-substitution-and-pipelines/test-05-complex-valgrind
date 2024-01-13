@@ -1,0 +1,3 @@
+#ENABLE VALGRIND
+$ echo one | cat <( echo 123 ) | cat
+$ cat <( echo one ) | cat <( echo 456 ) <( echo 102 ) | head -n 2
