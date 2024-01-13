@@ -30,7 +30,6 @@ command_call *new_command_call(size_t argc, char **argv, char *command_string) {
     command_call->name = argv[0];
     command_call->argc = argc;
     command_call->argv = argv;
-    command_call->background = 0;
     command_call->reading_pipes = NULL;
     command_call->writing_pipes = NULL;
     command_call->dependencies = NULL;
@@ -123,6 +122,7 @@ command *new_command(command_call *call, int **open_pipes, size_t open_pipes_siz
     }
 
     command->call = call;
+    command->background = 0;
     command->open_pipes = open_pipes;
     command->open_pipes_size = open_pipes_size;
 
@@ -799,7 +799,7 @@ command **parse_read_line(char *command_string, size_t *total_commands) {
                 }
             } else {
                 if ((int)((ssize_t)index) <= last_background_command_index) {
-                    commands[index]->call->background = 1;
+                    commands[index]->background = 1;
                 }
             }
         }

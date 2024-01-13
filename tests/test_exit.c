@@ -187,7 +187,7 @@ void test_exit_with_running_jobs(test_info *info) {
 
     int fd = open_test_file_to_write("test_exit_with_running_jobs_out.log");
     command *background_job = parse_command("sleep 1");
-    background_job->call->background = 1;
+    background_job->background = 1;
     background_job->call->stderr = fd;
 
     command *exit_fail = parse_command("exit");

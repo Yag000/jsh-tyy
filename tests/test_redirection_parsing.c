@@ -50,7 +50,7 @@ void test_parse_multiple_same_redirections(test_info *info) {
 
     command *command = parse_command("echo abcdefghijkl > tmp/output0 >> tmp/output1 >| tmp/output2");
 
-    command->call->background = 1;
+    command->background = 1;
 
     command_result *result = execute_command(command);
 
