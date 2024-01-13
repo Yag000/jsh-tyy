@@ -577,34 +577,6 @@ command_call *parse_command_call_with_pipes(char *command_string, int **open_pip
 
 char *sanitize_command_string(char *command_string) {
     char *result = trim_spaces(command_string);
-
-    size_t size = 0;
-    char **split = split_string(result, "<( ", &size); // Bash removes this space
-    free(result);
-    result = join_strings(split, size, "<(");
-    for (size_t i = 0; i < size; i++) {
-        free(split[i]);
-    }
-    free(split);
-
-    split = split_string(result, " )", &size); // Bash removes this space
-    free(result);
-    result = join_strings(split, size, ")");
-    for (size_t i = 0; i < size; i++) {
-        free(split[i]);
-    }
-    free(split);
-
-    if (size > 0 && strcmp(result + (strlen(result) - 1), ")") == 0) {
-        // This was removed and needs to be added back
-        result = reallocarray(result, strlen(result) + 2, sizeof(char));
-        if (result == NULL) {
-            perror("reallocarray");
-            return NULL;
-        }
-        strcat(result, ")");
-    }
-
     return result;
 }
 
