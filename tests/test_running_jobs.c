@@ -56,7 +56,7 @@ void helper_mute_update_jobs(char *file_name) {
 
 command_result *helper_execute_bg(char *scommand) {
     command *command = parse_command(scommand);
-    command->call->background = 1;
+    command->background = 1;
     command_result *result = mute_command_execution(command);
     return result;
 }
@@ -91,7 +91,7 @@ void test_case_are_jobs_running_one_instant_job(test_info *info) {
 
     int fd = open_test_file_to_write("test_running_jobs_one_instant_job_out.log");
     command *command = parse_command("ls");
-    command->call->background = 1;
+    command->background = 1;
     command->call->stdout = fd;
     command_result *result = execute_command(command);
 

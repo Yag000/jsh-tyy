@@ -31,7 +31,6 @@ typedef struct command_call {
     size_t dependencies_count;
     struct pipe_info *reading_pipes;
     struct pipe_info *writing_pipes;
-    int background; // 1 if the command is to be executed in background, 0 otherwise
     int stdin;
     int stdout;
     int stderr;
@@ -57,6 +56,7 @@ int is_internal_command(command_call *command_call);
 typedef struct command {
     command_call *call;
     char *command_string;
+    int background; // 1 if the command is to be executed in background, 0 otherwise
     int **open_pipes;
     size_t open_pipes_size;
 } command;

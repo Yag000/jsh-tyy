@@ -1,5 +1,4 @@
 #include "../src/command.h"
-#include "../src/internals.h"
 #include "../src/jobs.h"
 #include "test_core.h"
 #include "utils.h"
@@ -31,7 +30,7 @@ void test_launching_one_bg_job(test_info *info) {
     int fd = open_test_file_to_write("test_launching_one_bg_job.log");
 
     command *command = parse_command("ls");
-    command->call->background = 1;
+    command->background = 1;
     command->call->stdout = fd;
     command_result *result = mute_command_execution(command);
 
@@ -55,7 +54,7 @@ void test_launching_multiple_bg_jobs(test_info *info) {
 
     for (int i = 0; i < INITIAL_JOB_TABLE_CAPACITY + 2; i++) {
         command *command = parse_command("ls");
-        command->call->background = 1;
+        command->background = 1;
         command->call->stdout = fd;
         command_result *result = mute_command_execution(command);
 

@@ -167,7 +167,7 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
         close_writing_pipes(command, command_call);
 
         // Putting the process to the foreground
-        if (command_call->background == 0) {
+        if (command->background == 0) {
             if (tcsetpgrp(STDERR_FILENO, pgid) == -1) {
                 perror("tcsetpgrp");
                 exit(1);
@@ -258,7 +258,7 @@ size_t count_dependencies(command_call *command_call) {
 }
 
 job *setup_job(command *command) {
-    job_type job_type = command->call->background ? BACKGROUND : FOREGROUND;
+    job_type job_type = command->background ? BACKGROUND : FOREGROUND;
     size_t dependencies_count = count_dependencies(command->call);
     job *job = new_job(dependencies_count, job_type, command->command_string);
 
@@ -270,7 +270,7 @@ command_result *execute_external_command(command *command) {
     pid_t pid;
     int status;
 
-    int background = command->call->background;
+    int background = command->background;
     command_result *command_result = new_command_result(1, command);
     job *job = setup_job(command);
 

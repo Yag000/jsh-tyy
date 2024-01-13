@@ -27,12 +27,6 @@ void handle_command_call_test(command_call *actual, command_call *expected, int 
         }
     }
 
-    handle_int_test(actual->background, expected->background, line, file, info);
-    if (failed != info->failed) {
-        info->failed++;
-        return;
-    }
-
     handle_string_test(actual->command_string, expected->command_string, line, file, info);
     if (failed != info->failed) {
         info->failed++;
@@ -66,6 +60,12 @@ void handle_command_test(command *actual, command *expected, int line, const cha
     int failed = info->failed;
 
     handle_command_call_test(actual->call, expected->call, line, file, info);
+    if (failed != info->failed) {
+        info->failed++;
+        return;
+    }
+
+    handle_int_test(actual->background, expected->background, line, file, info);
     if (failed != info->failed) {
         info->failed++;
         return;

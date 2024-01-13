@@ -46,7 +46,7 @@ void test_redirection_stdin(test_info *info) {
     command *command = parse_command("cat");
     command->call->stdin = fd;
     command->call->stdout = output_fd;
-    command->call->background = 1;
+    command->background = 1;
     command_result *result = execute_command(command);
 
     sleep(1);
@@ -73,7 +73,7 @@ void test_redirection_stdout(test_info *info) {
 
     command *command = parse_command("echo HelloWorld");
     command->call->stdout = fd;
-    command->call->background = 1;
+    command->background = 1;
     command_result *result = execute_command(command);
     sleep(1);
     destroy_command_result(result);
@@ -99,7 +99,7 @@ void test_redirection_stderr(test_info *info) {
 
     command *command = parse_command("mv .");
     command->call->stderr = fd;
-    command->call->background = 1;
+    command->background = 1;
     command_result *result = execute_command(command);
     sleep(1);
     destroy_command_result(result);
