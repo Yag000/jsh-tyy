@@ -471,6 +471,101 @@ int parse_command_substitution(command_call_builder *builder, char **command_str
     return 0;
 }
 
+/**
+ * Add `dep` as a dependency of `call`.
+ */
+int add_depencencies(command_call *call, command_call *dep) {
+    if (call == NULL || dep == NULL) {
+        return -1;
+    }
+
+    if (call->dependencies == NULL) {
+
+        call->dependencies = malloc(sizeof(command_call *));
+        if (call->dependencies == NULL) {
+            perror("malloc");
+            return -1;
+        }
+
+        call->dependencies[0] = dep;
+        call->dependencies_count++;
+        return 0;
+    }
+
+    call->dependencies = reallocarray(call->dependencies, call->dependencies_count + 1, sizeof(command_call *));
+
+    if (call->dependencies == NULL) {
+        perror("reallocarray");
+        return -1;
+    }
+
+    call->dependencies[call->dependencies_count] = dep;
+    call->dependencies_count++;
+    return 0;
+}
+
+command_call *parse_command_call_with_pipes(char *command_string, int **open_pipes, size_t *total_pipes) {
+
+    size_t total_commands = 0;
+
+    char **pipes_splitted_str = split_string(command_string, PIPE_SYMBOL, &total_commands);
+
+    if (pipes_splitted_str == NULL) {
+        return NULL;
+    }
+
+    command_call *prev = NULL;
+    command_call *main_command = NULL;
+
+    // Compute commands from last to first; last command being the main one.
+    for (int index = total_commands - 1; index >= 0; --index) {
+
+        command_call *call = parse_command_call(pipes_splitted_str[index], open_pipes, total_pipes);
+
+        if (prev == NULL) {
+            prev = call;
+            main_command = call;
+            continue;
+        }
+
+        int result = add_depencencies(prev, call);
+
+        if (result < 0) {
+            return NULL;
+        }
+
+        int *fd = malloc(2 * sizeof(int));
+
+        if (fd == NULL) {
+            perror("malloc");
+            return NULL;
+        }
+
+        if (pipe(fd) == -1) {
+            perror("pipe");
+            return NULL;
+        }
+
+        add_pipe(prev->reading_pipes, *total_pipes);
+        add_pipe(call->writing_pipes, *total_pipes);
+
+        open_pipes[*total_pipes] = fd;
+        *total_pipes += 1;
+
+        prev->stdin = fd[0];
+        call->stdout = fd[1];
+
+        prev = call;
+    }
+
+    for (size_t index = 0; index < total_commands; ++index) {
+        free(pipes_splitted_str[index]);
+    }
+    free(pipes_splitted_str);
+
+    return main_command;
+}
+
 command *parse_command(char *command_string) {
 
     string_iterator *iterator = new_string_iterator(command_string, COMMAND_SEPARATOR);
@@ -487,7 +582,7 @@ command *parse_command(char *command_string) {
     }
     size_t total_pipes = 0;
 
-    command_call *call = parse_command_call(command_string, open_pipes, &total_pipes);
+    command_call *call = parse_command_call_with_pipes(command_string, open_pipes, &total_pipes);
 
     if (call == NULL) {
         free(open_pipes);
@@ -600,7 +695,8 @@ command_call *parse_command_call(char *command_string, int **open_pipes, size_t 
 
     for (size_t index = 0, new_index = 0; index < argc; ++index) {
         if (parsed_command_string != NULL && parsed_command_string[index] != NULL) {
-            redirection_parsed_command_string[new_index++] = parsed_command_string[index];
+            redirection_parsed_command_string[new_index] = parsed_command_string[index];
+            new_index++;
         }
     }
 
