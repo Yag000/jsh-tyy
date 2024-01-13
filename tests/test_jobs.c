@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
@@ -550,7 +549,7 @@ void test_jobs_command_with_jobs_running(test_info *info) {
         sprintf(command_buffer, "sleep %zu", i + 10);
 
         command *command = parse_command(command_buffer);
-        command->call->background = 1;
+        command->background = 1;
         command_result *result = mute_command_execution(command);
 
         job *job = job_table[result->job_id - 1];

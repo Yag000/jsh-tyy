@@ -164,7 +164,7 @@ void test_case_parse_command(test_info *info) {
     for (size_t index = 0; index < command_call->argc; ++index) {
         handle_string_test(expected_2[index], command_call->argv[index], __LINE__, __FILE__, info);
     }
-    handle_int_test(0, command_call->background, __LINE__, __FILE__, info);
+    handle_int_test(0, command->background, __LINE__, __FILE__, info);
     handle_int_test(0, command_call->stdin, __LINE__, __FILE__, info);
     handle_int_test(1, command_call->stdout, __LINE__, __FILE__, info);
     handle_int_test(2, command_call->stderr, __LINE__, __FILE__, info);
@@ -228,7 +228,7 @@ void test_simple_background_parsing_no_args_no_spaces(test_info *info) {
     handle_int_test(1, total_commands, __LINE__, __FILE__, info);
 
     command *expected = parse_command("pwd");
-    expected->call->background = 1;
+    expected->background = 1;
     handle_command_test(commands[0], expected, __LINE__, __FILE__, info);
 
     destroy_command(expected);
@@ -247,7 +247,7 @@ void test_simple_background_parsing_spaces_no_args(test_info *info) {
     handle_int_test(1, total_commands, __LINE__, __FILE__, info);
 
     command *expected = parse_command("pwd");
-    expected->call->background = 1;
+    expected->background = 1;
     handle_command_test(commands[0], expected, __LINE__, __FILE__, info);
 
     destroy_command(expected);
@@ -266,7 +266,7 @@ void test_simple_background_parsing_args_no_spaces(test_info *info) {
     handle_int_test(1, total_commands, __LINE__, __FILE__, info);
 
     command *expected = parse_command("aoc -d 24 -y 2003 submit");
-    expected->call->background = 1;
+    expected->background = 1;
     handle_command_test(commands[0], expected, __LINE__, __FILE__, info);
 
     destroy_command(expected);
@@ -285,7 +285,7 @@ void test_simple_background_parsing_args_spaces(test_info *info) {
     handle_int_test(1, total_commands, __LINE__, __FILE__, info);
 
     command *expected = parse_command("    cargo  build     --release ");
-    expected->call->background = 1;
+    expected->background = 1;
     handle_command_test(commands[0], expected, __LINE__, __FILE__, info);
 
     destroy_command(expected);
@@ -304,14 +304,14 @@ void test_complex_background_parsing_no_args_no_spaces(test_info *info) {
     handle_int_test(2, total_commands, __LINE__, __FILE__, info);
 
     command *expected_0 = parse_command("pwd");
-    expected_0->call->background = 1;
+    expected_0->background = 1;
     handle_command_test(commands[0], expected_0, __LINE__, __FILE__, info);
 
     destroy_command(expected_0);
     destroy_command(commands[0]);
 
     command *expected_1 = parse_command("ls");
-    expected_1->call->background = 0;
+    expected_1->background = 0;
     handle_command_test(commands[1], expected_1, __LINE__, __FILE__, info);
 
     destroy_command(expected_1);
@@ -330,7 +330,7 @@ void test_complex_background_parsing_args_spaces(test_info *info) {
     handle_int_test(2, total_commands, __LINE__, __FILE__, info);
 
     command *expected_0 = parse_command("sleep  10");
-    expected_0->call->background = 1;
+    expected_0->background = 1;
     handle_command_test(commands[0], expected_0, __LINE__, __FILE__, info);
 
     destroy_command(expected_0);
@@ -355,14 +355,14 @@ void test_complex_background_parsing_args_no_spaces(test_info *info) {
     handle_int_test(2, total_commands, __LINE__, __FILE__, info);
 
     command *expected_0 = parse_command("sleep 666");
-    expected_0->call->background = 1;
+    expected_0->background = 1;
     handle_command_test(commands[0], expected_0, __LINE__, __FILE__, info);
 
     destroy_command(expected_0);
     destroy_command(commands[0]);
 
     command *expected_1 = parse_command("ls");
-    expected_1->call->background = 1;
+    expected_1->background = 1;
     handle_command_test(commands[1], expected_1, __LINE__, __FILE__, info);
 
     destroy_command(expected_1);
@@ -380,14 +380,14 @@ void test_complex_full_background_parsing_args_spaces(test_info *info) {
     handle_int_test(2, total_commands, __LINE__, __FILE__, info);
 
     command *expected_0 = parse_command("sleep 1000d");
-    expected_0->call->background = 1;
+    expected_0->background = 1;
     handle_command_test(commands[0], expected_0, __LINE__, __FILE__, info);
 
     destroy_command(expected_0);
     destroy_command(commands[0]);
 
     command *expected_1 = parse_command("ls -l   -a");
-    expected_1->call->background = 1;
+    expected_1->background = 1;
     handle_command_test(commands[1], expected_1, __LINE__, __FILE__, info);
 
     destroy_command(expected_1);
