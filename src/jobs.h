@@ -23,6 +23,7 @@ typedef struct subjob {
 typedef struct job {
     size_t id; // Job number, 1-indexed
     size_t subjobs_size;
+    job_status status;
     pid_t pgid; // Process group id for all the subjobs
     char *command_string;
     subjob **subjobs;
@@ -47,9 +48,21 @@ job *new_job(size_t, job_type, char *);
 void destroy_job(job *);
 
 /** Prints the job to `fd`, following the format:
- *  [id] pid status command
+ *  [id] pgid status command
  */
 void print_job(job *, int fd);
+
+/**
+ * Updates the status of the job's subjobs by calling
+ * the waitpid with the WUNTRACED flag, this will block
+ * until all the subjobs have finished or have been stopped.
+ *
+ * Returns the exit status of the first subjob, since it
+ * is the only one that can change the exit status of the job.
+ *
+ * Returns -1 if an error occurred.
+ */
+int blocking_wait_for_job(job *);
 
 /** Original capacity of the job table. Every time the job table expands
  *  it will be expanded by this number */

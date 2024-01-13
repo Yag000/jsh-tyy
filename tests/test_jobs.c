@@ -93,6 +93,7 @@ void test_case_print_job(test_info *info) {
 
     command *command = parse_command("pwd yes");
     job *job = new_single_command_job(command->call, 100, RUNNING, BACKGROUND);
+    job->pgid = 100;
     destroy_command(command);
 
     job->id = 1;

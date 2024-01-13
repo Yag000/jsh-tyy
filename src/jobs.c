@@ -83,6 +83,7 @@ job *new_job(size_t subjobs_size, job_type type, char *command_string) {
     strcpy(command_string_copy, command_string);
     j->command_string = command_string_copy;
 
+    j->status = RUNNING;
     j->type = type;
 
     return j;
@@ -107,13 +108,7 @@ void print_subjob(subjob *j, int fd) {
 }
 
 void print_job(job *j, int fd) {
-    dprintf(fd, "[%ld]", j->id);
-    for (size_t i = 0; i < j->subjobs_size; i++) {
-        if (j->subjobs[i] == NULL) {
-            continue;
-        }
-        print_subjob(j->subjobs[i], fd);
-    }
+    dprintf(fd, "[%ld]\t%d\t%s\t%s\n", j->id, j->pgid, job_status_to_string(j->status), j->command_string);
 }
 void init_job_table() {
     destroy_job_table();
@@ -186,8 +181,153 @@ int remove_job(size_t id) {
     return 0;
 }
 
+int is_job_alive(job *j) {
+    if (j == NULL) {
+        return 0;
+    }
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        if (j->subjobs[i] == NULL) {
+            continue;
+        }
+        if (j->subjobs[i]->last_status == RUNNING || j->subjobs[i]->last_status == STOPPED) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * Returns 1 if the status represents a finished job.
+ * Returns 0 otherwise.
+ */
+int is_finished_status(job_status status) {
+    if (status == DONE || status == KILLED || status == DETACHED) {
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * Returns 1 if the job is dead.
+ * Returns 0 otherwise.
+ */
+int is_job_finished(job *j) {
+    if (j == NULL) {
+        return 1;
+    }
+
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        if (j->subjobs[i] == NULL) {
+            continue;
+        }
+        if (!is_finished_status(j->subjobs[i]->last_status)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/**
+ * Returns 1 if the job is killed.
+ * Returns 0 otherwise.
+ */
+int is_job_killed(job *j) {
+    if (j == NULL) {
+        return 0;
+    }
+
+    // The jobs has to be finished
+    if (!is_job_finished(j)) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        if (j->subjobs[i] == NULL) {
+            continue;
+        }
+        if (j->subjobs[i]->last_status == KILLED) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Returns 1 if the job is suspended.
+ * Returns 0 otherwise.
+ */
+int is_job_suspended(job *j) {
+    if (j == NULL) {
+        return 0;
+    }
+
+    if (is_job_finished(j)) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        if (j->subjobs[i] == NULL) {
+            continue;
+        }
+
+        // We ignore finished jobs, so there can't be a RUNNING job
+        if (j->subjobs[i]->last_status == RUNNING) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/**
+ * Returns 1 if the job is running.
+ * Returns 0 otherwise.
+ */
+int is_job_running(job *j) {
+    if (j == NULL) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        if (j->subjobs[i] == NULL) {
+            continue;
+        }
+        if (j->subjobs[i]->last_status == RUNNING) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Updates the job status based on the subjobs status.
+ */
+void update_job_status(job *j) {
+    if (j == NULL) {
+        return;
+    }
+
+    // TODO: Handle detached
+    if (is_job_running(j)) {
+        j->status = RUNNING;
+    } else if (is_job_suspended(j)) {
+        j->status = STOPPED;
+    } else if (is_job_killed(j)) {
+        j->status = KILLED;
+    } else if (is_job_finished(j)) {
+        j->status = DONE;
+    } else {
+        // Any other scenario should not
+        // be possible, but we set the status
+        // to RUNNING just in case
+        j->status = RUNNING;
+    }
+}
+
 job_status job_status_from_int(int status) {
-    // What to do with detached jobs?
     if WIFEXITED (status) {
         return DONE;
     } else if WIFSTOPPED (status) {
@@ -202,46 +342,101 @@ job_status job_status_from_int(int status) {
 }
 
 /**
- * Updates the last status of the job with the given pid.
- * If there is an error, -1 is returned.
- * If the status of the job has not changed, 0 is returned.
- * If the status of the job has changed, 1 is returned.
+ * Updates the subjob status based on the information
+ * returned by the waitpid function.
+ *
+ * Returns 0 if the process was updated successfully.
+ * Returns -1 if an error occurred.
  */
-int get_job_status(int pid, job_status *last_status) {
-    int status;
-
-    int pid_ = waitpid(pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
-    if (pid_ < 0) {
+int process_waitpid_response(pid_t pid, int status, job_status *last_status) {
+    if (pid == -1) {
         perror("waitpid");
         return -1;
     }
 
-    if (pid_ == 0) {
+    if (pid == 0) {
         return 0;
     }
 
     *last_status = job_status_from_int(status);
-
-    return 1;
+    return 0;
 }
 
-int is_job_running(job *j) {
+/**
+ * Updates the status of the job's subjobs by calling
+ * the waitpid function with the WNOHANG flag.
+ *
+ * Returns 0 if the job was updated successfully.
+ * Returns -1 if an error occurred.
+ */
+int wait_for_job(job *j) {
+    if (j == NULL) {
+        return -1;
+    }
+
     for (size_t i = 0; i < j->subjobs_size; i++) {
-        if (j->subjobs[i] == NULL) {
+        subjob *subjob = j->subjobs[i];
+        if (subjob == NULL) {
             continue;
         }
-        if (j->subjobs[i]->last_status == RUNNING || j->subjobs[i]->last_status == STOPPED) {
-            return 1;
+
+        // Ignore finished jobs
+        if (is_finished_status(subjob->last_status)) {
+            continue;
+        }
+
+        int status;
+        pid_t pid = waitpid(subjob->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+
+        if (process_waitpid_response(pid, status, &subjob->last_status) == -1) {
+            return -1;
         }
     }
+
+    update_job_status(j);
     return 0;
+}
+
+int blocking_wait_for_job(job *j) {
+    if (j == NULL) {
+        return -1;
+    }
+
+    int exit_status = 0;
+
+    for (size_t i = 0; i < j->subjobs_size; i++) {
+        subjob *subjob = j->subjobs[i];
+        if (subjob == NULL) {
+            continue;
+        }
+
+        // Ignore finished jobs
+        if (is_finished_status(subjob->last_status)) {
+            continue;
+        }
+
+        int status;
+        pid_t pid = waitpid(subjob->pid, &status, WUNTRACED);
+
+        if (process_waitpid_response(pid, status, &subjob->last_status) == -1) {
+            return -1;
+        }
+
+        if (i == 0) {
+            if (subjob->last_status != RUNNING && subjob->last_status != STOPPED) {
+                exit_status = WEXITSTATUS(status);
+            }
+        }
+    }
+
+    update_job_status(j);
+    return exit_status;
 }
 
 int are_jobs_running() {
     for (size_t i = 0; i < job_table_capacity; i++) {
-
         if (job_table[i] != NULL) {
-            if (is_job_running(job_table[i])) {
+            if (is_job_alive(job_table[i])) {
                 return 1;
             }
         }
@@ -249,65 +444,25 @@ int are_jobs_running() {
     return 0;
 }
 
-/**
- * Returns 1 if the job should be removed from the job table.
- * Returns 0 otherwise.
- */
-int is_remove_status(job_status status) {
-    if (status == DONE || status == KILLED || status == DETACHED) {
-        return 1;
-    }
-    return 0;
-}
-
-int should_remove_job(job *job) {
-    for (size_t j = 0; j < job->subjobs_size; j++) {
-        if (job->subjobs[j] == NULL) {
-            continue;
-        }
-        if (!is_remove_status(job->subjobs[j]->last_status)) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-int update_subjob(job *job, size_t subjob_index) {
-    subjob *subjob = job->subjobs[subjob_index];
-    int has_changed = get_job_status(subjob->pid, &subjob->last_status);
-
-    if (has_changed == -1) {
-        return 0;
-    }
-
-    if (has_changed) {
-        return 1;
-    }
-
-    return 0;
-}
-
 void fd_update_jobs(int fd) {
     for (size_t i = 0; i < job_table_capacity; i++) {
-        if (job_table[i] != NULL) {
-            int should_print = 0;
-            for (size_t j = 0; j < job_table[i]->subjobs_size; j++) {
-                if (job_table[i]->subjobs[j] == NULL) {
-                    continue;
-                }
-                int has_changed = update_subjob(job_table[i], j);
-                if (has_changed) {
-                    should_print = 1;
-                }
-            }
+        job *job = job_table[i];
+        if (job_table[i] == NULL) {
+            continue;
+        }
 
-            if (should_print) {
-                print_job(job_table[i], fd);
-            }
+        job_status last_status = job->status;
 
-            if (should_remove_job(job_table[i])) {
-                remove_job(job_table[i]->id);
-            }
+        if (wait_for_job(job) == -1) {
+            continue;
+        }
+
+        if (last_status != job->status) {
+            print_job(job, fd);
+        }
+
+        if (is_job_finished(job)) {
+            remove_job(job->id);
         }
     }
 }
@@ -358,19 +513,15 @@ int put_job_in_foreground(job *job) {
     job->type = FOREGROUND;
 
     // Wait for the job to be stopped or to be terminated
-    int status;
-    if (waitpid(job->pgid, &status, WUNTRACED) == -1) {
-        perror("waitpid");
+    int exit_code = blocking_wait_for_job(job);
+
+    if (exit_code == -1) {
         return 0;
     }
 
-    if (WIFEXITED(status)) {
+    if (is_job_finished(job)) {
         remove_job(job->id);
-    } else if (WIFSTOPPED(status)) {
-        if (job->subjobs == NULL || job->subjobs[0] == NULL) {
-            return 0;
-        }
-        job->subjobs[0]->last_status = STOPPED;
+    } else {
         print_job(job, STDERR_FILENO);
     }
 
@@ -402,11 +553,6 @@ int continue_job_in_background(job *job) {
 
     // Set the job's type as the BACKGROUND process group
     job->type = BACKGROUND;
-
-    if (job->subjobs == NULL || job->subjobs[0] == NULL) {
-        return 0;
-    }
-    job->subjobs[0]->last_status = RUNNING;
 
     return 1;
 }
