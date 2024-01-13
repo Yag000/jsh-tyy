@@ -56,11 +56,12 @@ int is_internal_command(command_call *command_call);
 
 typedef struct command {
     command_call *call;
+    char *command_string;
     int **open_pipes;
     size_t open_pipes_size;
 } command;
 
-command *new_command(command_call *call, int **open_pipes, size_t open_pipes_size);
+command *new_command(command_call *call, int **open_pipes, size_t open_pipes_size, char *command_string);
 void destroy_command(command *command);
 
 /** Parse unique command string to `command_call`.

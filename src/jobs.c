@@ -62,7 +62,7 @@ void destroy_subjob(subjob *j) {
     free(j);
 }
 
-job *new_job(size_t subjobs_size, job_type type) {
+job *new_job(size_t subjobs_size, job_type type, char *command_string) {
     job *j = malloc(sizeof(job));
     j->id = UNINITIALIZED_JOB_ID;
 
@@ -74,6 +74,15 @@ job *new_job(size_t subjobs_size, job_type type) {
     }
     j->subjobs = subjobs;
     j->pgid = 0;
+
+    char *command_string_copy = malloc((strlen(command_string) + 1) * sizeof(char));
+    if (command_string_copy == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+    strcpy(command_string_copy, command_string);
+    j->command_string = command_string_copy;
+
     j->type = type;
 
     return j;
@@ -89,6 +98,7 @@ void destroy_job(job *j) {
     }
 
     free(j->subjobs);
+    free(j->command_string);
     free(j);
 }
 
