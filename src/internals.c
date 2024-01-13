@@ -257,10 +257,10 @@ size_t count_dependencies(command_call *command_call) {
     return dependencies_count;
 }
 
-job *setup_job(command_call *command_call) {
-    job_type job_type = command_call->background ? BACKGROUND : FOREGROUND;
-    size_t dependencies_count = count_dependencies(command_call);
-    job *job = new_job(dependencies_count, job_type);
+job *setup_job(command *command) {
+    job_type job_type = command->call->background ? BACKGROUND : FOREGROUND;
+    size_t dependencies_count = count_dependencies(command->call);
+    job *job = new_job(dependencies_count, job_type, command->command_string);
 
     return job;
 }
@@ -272,7 +272,7 @@ command_result *execute_external_command(command *command) {
 
     int background = command->call->background;
     command_result *command_result = new_command_result(1, command);
-    job *job = setup_job(command->call);
+    job *job = setup_job(command);
 
     pid = execute_as_job(command, command->call, job);
 
