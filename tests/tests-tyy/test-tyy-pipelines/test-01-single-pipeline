@@ -1,0 +1,4 @@
+$ cat TimeRidersExcerpt | head
+$ cat TimeRidersExcerpt | tail
+$ cat TimeRidersExcerpt | head -n 3
+$ cat TimeRidersExcerpt | wc -l

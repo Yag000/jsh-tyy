@@ -23,7 +23,7 @@ void destroy_string_iterator(string_iterator *);
 void trim_start(string_iterator *);
 
 /** Returns 1 if the first string starts with the prefix, 0 otherwise. */
-int starts_with(char *, const char *prefix);
+int starts_with(const char *, const char *prefix);
 
 /** Returns 0 if there are no more words in the string, 1 otherwise. */
 int has_next_word(string_iterator *);
@@ -77,5 +77,10 @@ char *trim_spaces(const char *str);
  * Returns 1 on success.
  */
 int parse_intmax_t(char *string, intmax_t *res, int fd);
+
+/**
+ * Returns 1 if `str` is only composed of `pattern` and nothing else, 0 otherwise.
+ */
+int is_only_composed_of(const char *str, const char *pattern);
 
 #endif // STRING_UTILS_H

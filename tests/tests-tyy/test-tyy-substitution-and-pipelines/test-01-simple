@@ -1,0 +1,5 @@
+$ cat <( cat ALPHABET ) | cat
+$ cat <( echo 123 ) | echo
+$ cat <( echo 123 ) | echo
+$ cat <( cat ALPHABET ) | cat | head -n 5
+$ cat <( cat ALPHABET ) | cat -n | head -n 5

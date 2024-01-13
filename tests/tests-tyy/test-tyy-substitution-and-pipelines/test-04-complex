@@ -1,0 +1,3 @@
+$ echo one | cat <( echo 123 ) | echo
+$ echo one | cat <( echo 123 ) | cat <( echo 456 )
+$ cat <( echo one ) | echo <( echo 456 ) | head -n 1 | cat <( echo 789 ) <( echo 101112 )

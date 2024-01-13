@@ -1,0 +1,4 @@
+$ cat <( echo 123 ) | echo
+$ cat <( echo 123 ) | echo
+$ echo one | cat <( echo 123 )
+$ echo one | cat <( echo 123 )
