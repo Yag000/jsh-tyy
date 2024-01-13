@@ -268,7 +268,6 @@ job *setup_job(command *command) {
 /** Executes an external command call. */
 command_result *execute_external_command(command *command) {
     pid_t pid;
-    int status;
 
     int background = command->background;
     command_result *command_result = new_command_result(1, command);
@@ -285,24 +284,22 @@ command_result *execute_external_command(command *command) {
     }
 
     if (background == 0) {
-        int pid_ = waitpid(pid, &status, WUNTRACED);
-        if (pid_ == -1) {
+        int exit_code = blocking_wait_for_job(job);
+        if (exit_code == -1) {
             perror("waitpid");
             exit(1);
         }
 
-        if (tcsetpgrp(STDERR_FILENO, getpid()) == -1) {
+        if (tcsetpgrp(STDERR_FILENO, getpgrp()) == -1) {
             perror("tcsetpgrp");
             exit(1);
         }
 
-        if (WIFEXITED(status)) {
-            command_result->exit_code = WEXITSTATUS(status);
+        if (job->status == DONE || job->status == KILLED || job->status == DETACHED) {
+            command_result->exit_code = exit_code;
             destroy_job(job);
-        } else if (WIFSTOPPED(status)) {
+        } else {
             int job_id = add_job(job);
-
-            job->subjobs[0]->last_status = STOPPED;
 
             print_job(job, STDERR_FILENO);
 
