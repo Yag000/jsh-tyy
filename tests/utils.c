@@ -179,7 +179,7 @@ command_result *mute_command_execution(command *command) {
 }
 
 job *new_single_command_job(command_call *command_call, pid_t pid, job_status status, job_type type) {
-    job *job = new_job(1, type);
+    job *job = new_job(1, type, command_call->command_string);
     subjob *subjob = new_subjob(command_call, pid, status);
     job->subjobs[0] = subjob;
 

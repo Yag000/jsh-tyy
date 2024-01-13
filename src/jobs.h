@@ -24,6 +24,7 @@ typedef struct job {
     size_t id; // Job number, 1-indexed
     size_t subjobs_size;
     pid_t pgid; // Process group id for all the subjobs
+    char *command_string;
     subjob **subjobs;
     job_type type;
 } job;
@@ -36,9 +37,9 @@ subjob *new_subjob(command_call *, pid_t, job_status);
  */
 void destroy_subjob(subjob *);
 
-/** Returns a new job with the given subjobs size, the
+/** Returns a new job with the given subjobs size and name, the
  * subjobs will be set to NULL. */
-job *new_job(size_t, job_type);
+job *new_job(size_t, job_type, char *);
 
 /** Frees the memory allocated for the job.
  *  Calls `destroy_subjob` on all the job's subjobs.
