@@ -333,3 +333,30 @@ int is_only_composed_of(const char *str, const char *pattern) {
     }
     return 1;
 }
+
+char *repeat(const char *str, size_t n) {
+
+    if (n == 0) {
+        char *empty = malloc(sizeof(char));
+        if (empty == NULL) {
+            perror("malloc");
+            return NULL;
+        }
+        empty[0] = '\0';
+        return empty;
+    }
+
+    size_t len = strlen(str);
+    char *result = malloc((n * len + 1) * sizeof(char));
+    if (result == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    for (size_t index = 0; index < n; ++index) {
+        memmove(result + index * len, str, len);
+    }
+
+    result[n * len] = '\0';
+    return result;
+}

@@ -6,12 +6,13 @@
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 int *get_children(int pid, size_t *size) {
 
-    char path[PATH_MAX];
+    char path[PATH_MAX] = "";
     *size = 0;
 
     snprintf(path, PATH_MAX, "/proc/%d/task/%d/children", pid, pid);
@@ -22,28 +23,48 @@ int *get_children(int pid, size_t *size) {
         return NULL;
     }
 
-    struct stat st;
-    if (lstat(path, &st) == -1) {
-        perror("lstat");
-        return NULL;
-    }
+    char buf[BUFSIZ] = "";
+    size_t total_size = 0;
+    char *string = malloc(sizeof(char));
+    string[0] = '\0';
 
-    char *buf = malloc((st.st_size + 1) * sizeof(char));
-    if (buf == NULL) {
+    if (string == NULL) {
         perror("malloc");
         return NULL;
     }
 
-    if (read(fd, buf, st.st_size) == -1) {
-        perror("read");
-        return NULL;
-    }
+    int nb_read = 1;
+    while (nb_read) {
+        nb_read = read(fd, buf, BUFSIZ);
 
-    buf[st.st_size] = '\0';
+        if (nb_read < 0) {
+            perror("read");
+            free(string);
+            close(fd);
+            return NULL;
+        }
+
+        char *new_string = malloc((total_size + nb_read + 1) * sizeof(char));
+
+        if (new_string == NULL) {
+            perror("malloc");
+            free(string);
+            close(fd);
+            return NULL;
+        }
+
+        snprintf(new_string, total_size + nb_read, "%s%s", string, buf);
+        total_size += nb_read;
+
+        free(string);
+        string = new_string;
+    }
+    string[total_size] = '\0';
 
     close(fd);
 
-    char **children_string = split_string(buf, " ", size);
+    char **children_string = split_string(string, " ", size);
+    free(string);
 
     int *children_pid = malloc(*size * sizeof(int));
     if (children_pid == NULL) {
