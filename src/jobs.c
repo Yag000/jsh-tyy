@@ -1,5 +1,6 @@
 #include "jobs.h"
 #include "command.h"
+#include "proc.h"
 #include "string_utils.h"
 
 #include <sys/wait.h>
@@ -104,6 +105,7 @@ void print_subjob(subjob *j, int fd) {
 void print_job(job *j, int fd) {
     dprintf(fd, "[%ld]\t%d\t%s\t%s\n", j->id, j->pgid, job_status_to_string(j->status), j->command_string);
 }
+
 void init_job_table() {
     destroy_job_table();
     job_table = malloc(INITIAL_JOB_TABLE_CAPACITY * sizeof(job *));
@@ -469,21 +471,89 @@ void update_jobs() {
     fd_update_jobs(STDERR_FILENO);
 }
 
-int jobs_command(command_call *command_call) {
+void print_children(subjob *job, pid_t pid, size_t tabulation, int fd) {
 
-    // TODO: Implement remaining functionalities
+    size_t size = 0;
+    int *children = get_children(pid, &size);
 
-    fd_update_jobs(command_call->stdout);
+    // This is the lowest level of printing. This can be upgraded.
+    char *spaces = repeat("\t", tabulation);
 
-    // TODO: Delete this when the full functionalities will be implemented
-    if (command_call->argc > 1) {
-        dprintf(command_call->stderr, "jobs: too many arguments\n");
+    if (spaces == NULL) {
+        return;
+    }
+
+    for (size_t index = 0; index < size; ++index) {
+        dprintf(fd, "\t%s%s\t%d\t%s\t%s\n", spaces, "| ", children[index], job_status_to_string(job->last_status),
+                job->command);
+        print_children(job, children[index], tabulation + 1, fd);
+    }
+
+    free(spaces);
+    free(children);
+}
+
+void print_job_tree(job *job, int fd) {
+    for (size_t index = 0; index < job->subjobs_size; ++index) {
+        if (index == 0) {
+            dprintf(fd, "[%zu]", job->id);
+        }
+        print_subjob(job->subjobs[index], fd);
+        print_children(job->subjobs[index], job->subjobs[index]->pid, 0, fd);
+    }
+}
+
+int jobs_command(command_call *call) {
+
+    fd_update_jobs(call->stdout);
+
+    if (call->argc > 3) {
+        dprintf(call->stderr, "jobs: too many arguments\n");
         return 1;
     }
 
+    int tree = 0;
+    job *job = NULL;
+
+    // Looking if `-t` and/or %[job_id] options were passed.
+    if (call->argc > 1) {
+        size_t string_job_index = 1;
+
+        if (strcmp(call->argv[1], "-t") == 0) {
+            tree = 1;
+            string_job_index = 2;
+        } else if (call->argc == 3 && strcmp(call->argv[2], "-t") == 0) {
+            tree = 1;
+        }
+
+        if (call->argc > string_job_index && starts_with(call->argv[string_job_index], "%")) {
+            job = get_job(call->argv[string_job_index], call->stderr);
+
+            if (job == NULL) {
+                return 1;
+            }
+        }
+    }
+
+    if (job != NULL) {
+        if (tree) {
+            print_job_tree(job, call->stdout);
+            return 0;
+        }
+
+        print_job(job, call->stdout);
+        return 0;
+    }
+
     for (size_t i = 0; i < job_table_capacity; i++) {
-        if (job_table[i] != NULL) {
-            print_job(job_table[i], command_call->stdout);
+        job = job_table[i];
+        if (job == NULL) {
+            continue;
+        }
+        if (tree) {
+            print_job_tree(job, call->stdout);
+        } else {
+            print_job(job_table[i], call->stdout);
         }
     }
 
@@ -577,7 +647,7 @@ job *get_job(char *job_id_string, int error_fd) {
 
     // Job doesn't exist
     if (job_table[job_id - 1] == NULL) {
-        dprintf(error_fd, "%%%zu: no such job.", job_id);
+        dprintf(error_fd, "%%%zu: no such job.\n", job_id);
         return NULL;
     }
 
