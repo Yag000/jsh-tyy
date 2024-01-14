@@ -1,0 +1,10 @@
+#ENABLE VALGRIND
+
+$ sleep 1 &
+$ jobs
+$ jobs  >| jobs.out
+$ cat jobs.out
+$ jobs 2>| jobs.err
+$ cat jobs.err
+$ jobs | echo
+$ sleep 1

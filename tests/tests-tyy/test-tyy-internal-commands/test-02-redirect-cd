@@ -1,0 +1,10 @@
+#IGNORE STDERR
+#ENABLE VALGRIND
+#IGNORE STDOUT
+#IGNORE CWD
+
+$ cd <( echo /dev )
+$ pwd | cd
+$ echo y | cd
+$ cd | cat <( pwd )
+$ cd <( cd )
