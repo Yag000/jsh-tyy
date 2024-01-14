@@ -2,6 +2,7 @@
 #include "internals.h"
 #include "jobs.h"
 #include "string_utils.h"
+#include "utils.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -10,6 +11,8 @@ const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd
 
 const char *redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT] = {
     ">", "<", ">|", ">>", "2>", "2>|", "2>>", COMMAND_SUBSTITUTION_START, COMMAND_SUBSTITUTION_END, PIPE_SYMBOL};
+
+#define UNINITIALIZED_FD -1
 
 // This variable represents the last command call on the main pipeline
 // for example in a | b | c it should be c
@@ -21,7 +24,7 @@ command_call *last_parsed_command_call = NULL;
 // substitution. It gets reset every time we parse a new substitution.
 command_call *last_parsed_command_call_substitution = NULL;
 
-command_call *parse_command_call(command *, char *, int);
+command_call *parse_command_call(command *, char *, int, int);
 
 /** Returns a new command call with the given name, argc and argv. */
 command_call *new_command_call(size_t argc, char **argv, char *command_string) {
@@ -212,9 +215,9 @@ command_call_builder *new_command_call_builder() {
         return NULL;
     }
 
-    fds[0] = -1;
-    fds[1] = -1;
-    fds[2] = -1;
+    fds[0] = UNINITIALIZED_FD;
+    fds[1] = UNINITIALIZED_FD;
+    fds[2] = UNINITIALIZED_FD;
 
     c->fds = fds;
     c->reading_pipes = reading_pipe_info;
@@ -223,7 +226,18 @@ command_call_builder *new_command_call_builder() {
     return c;
 }
 
+void soft_destroy_command_call_builder(command_call_builder *builder) {
+    free(builder->fds);
+    free(builder);
+}
+
 void destroy_command_call_builder(command_call_builder *builder) {
+    if (builder == NULL) {
+        return;
+    }
+
+    destroy_pipe_info(builder->reading_pipes);
+    destroy_pipe_info(builder->writing_pipes);
     free(builder->fds);
     free(builder);
 }
@@ -344,13 +358,13 @@ command_call *build_command(command_call_builder *builder, size_t argc, char **a
         return NULL;
     }
 
-    if (builder->fds[0] >= 0) {
+    if (builder->fds[0] != UNINITIALIZED_FD) {
         command->stdin = builder->fds[0];
     }
-    if (builder->fds[1] >= 0) {
+    if (builder->fds[1] != UNINITIALIZED_FD) {
         command->stdout = builder->fds[1];
     }
-    if (builder->fds[2] >= 0) {
+    if (builder->fds[2] != UNINITIALIZED_FD) {
         command->stderr = builder->fds[2];
     }
 
@@ -460,7 +474,6 @@ int parse_command_substitution(command *command, command_call_builder *builder, 
     size_t i;
     int starts_found = 0;
     for (i = 0; i < positions_left; i++) {
-
         if (strcmp(command_string[i], COMMAND_SUBSTITUTION_START) == 0) {
             starts_found++;
         }
@@ -498,16 +511,23 @@ int parse_command_substitution(command *command, command_call_builder *builder, 
     if (joined_command == NULL) {
         return -1;
     }
-    command_call *call = parse_command_call(command, joined_command, 1);
+    command_call *call = parse_command_call(command, joined_command, 1, 0);
     free(joined_command);
 
     if (last_parsed_command_call_substitution == NULL) {
-        free(fd);
         return -1;
     }
 
     if (call == NULL) {
-        free(fd);
+        return -1;
+    }
+
+    // The last element of process substitution should not redirect stdout
+    if (last_parsed_command_call_substitution->stdout != STDOUT_FILENO) {
+        destroy_command_call(call);
+        int fds[3] = {call->stdin, call->stdout, call->stderr};
+        close_unused_file_descriptors_from_array(fds, 3);
+        dprintf(STDERR_FILENO, "jsh: parse error\n");
         return -1;
     }
 
@@ -587,17 +607,20 @@ command *parse_command(char *command_string) {
 
     last_parsed_command_call = NULL;
 
-    command_call *call = parse_command_call(command, command_string, 0);
+    command_call *call = parse_command_call(command, command_string, 0, 0);
 
     if (call == NULL) {
-        destroy_command(command);
-        return NULL;
+        if (last_parsed_command_call != NULL) {
+            // We add it to let command take care of closing the file descriptors and destroying the command call
+            add_call_at_the_end(command, last_parsed_command_call);
+        }
+        goto error;
     }
 
     if (last_parsed_command_call == NULL) {
-        destroy_command_call(call);
-        destroy_command(command);
-        return NULL;
+        // We add it to let command take care of closing the file descriptors and destroying the command call
+        add_call_at_the_end(command, call);
+        goto error;
     }
 
     if (last_parsed_command_call != call) {
@@ -609,6 +632,20 @@ command *parse_command(char *command_string) {
     last_parsed_command_call = NULL;
 
     return command;
+
+error:
+    close_unused_file_descriptors(command);
+    if (command->open_pipes != NULL) {
+        for (size_t index = 0; index < command->open_pipes_size; ++index) {
+            if (command->open_pipes[index] == NULL) {
+                continue;
+            }
+            close(command->open_pipes[index][0]);
+            close(command->open_pipes[index][1]);
+        }
+    }
+    destroy_command(command);
+    return NULL;
 }
 
 char *remove_extra_pipes(char *command_string) {
@@ -647,16 +684,19 @@ char *remove_extra_pipes(char *command_string) {
     return result;
 }
 
-command_call *parse_command_call(command *command, char *command_string, int inside_substitution) {
+command_call *parse_command_call(command *command, char *command_string, int inside_substitution, int inside_pipeline) {
     size_t argc;
     char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
-    if (argc == 0) {
+    if (argc == 0 || parsed_command_string == NULL) {
         free(parsed_command_string);
         return NULL;
     }
 
     command_call_builder *command_builder = new_command_call_builder();
     if (command_builder == NULL) {
+        for (size_t index = 0; index < argc; ++index) {
+            free(parsed_command_string[index]);
+        }
         free(parsed_command_string);
         return NULL;
     }
@@ -676,17 +716,15 @@ command_call *parse_command_call(command *command, char *command_string, int ins
             continue;
         }
 
-        if (index == argc - 1 || parsed_command_string[index + 1] == NULL) {
+        if (index == argc - 1 || parsed_command_string[index + 1] == NULL || index == 0) {
             dprintf(STDERR_FILENO, "jsh: parse error\n");
-            free(parsed_command_string);
-            return NULL;
+            goto error;
         }
 
         if (contains_string(redirection_caret_symbols, REDIRECTION_CARET_SYMBOLS_COUNT,
                             parsed_command_string[index + 1])) {
             dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
-            free(parsed_command_string);
-            return NULL;
+            goto error;
         }
 
         if (strcmp(parsed_command_string[index], COMMAND_SUBSTITUTION_START) == 0) {
@@ -697,24 +735,27 @@ command_call *parse_command_call(command *command, char *command_string, int ins
                                            argc - index - 1, &index) == -1) {
 
                 dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
-                free(parsed_command_string);
-                return NULL;
+                goto error;
             }
         } else if (strcmp(parsed_command_string[index], PIPE_SYMBOL) == 0) {
+            // If we find a pipe symbol we need to make sure that we do not have set an stdout, since
+            // we need to pipe the output of this command to the next one.
+            if (command_builder->fds[1] != UNINITIALIZED_FD) {
+                dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
+                goto error;
+            }
             char *joined = join_strings(parsed_command_string + index + 1, argc - index - 1, " ");
 
-            command_call *pipped_command_call = parse_command_call(command, joined, inside_substitution);
+            command_call *pipped_command_call = parse_command_call(command, joined, inside_substitution, 1);
             free(joined);
             if (pipped_command_call == NULL) {
                 dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
-                free(parsed_command_string);
-                return NULL;
+                goto error;
             }
 
             if (link_pipelines(command, command_builder, pipped_command_call) == -1) {
                 dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
-                free(parsed_command_string);
-                return NULL;
+                goto error;
             }
 
             if (last_parsed_command_call != pipped_command_call || inside_substitution) {
@@ -734,8 +775,7 @@ command_call *parse_command_call(command *command, char *command_string, int ins
                                             parsed_command_string[index + 1]);
 
             if (status < 0) {
-                free(parsed_command_string);
-                return NULL;
+                goto error;
             }
 
             free(parsed_command_string[index]);
@@ -744,6 +784,22 @@ command_call *parse_command_call(command *command, char *command_string, int ins
             parsed_command_string[index] = NULL;
             parsed_command_string[index + 1] = NULL;
             ++index;
+        }
+    }
+
+    if (inside_pipeline) {
+        if (command_builder->fds[0] != UNINITIALIZED_FD) {
+            dprintf(STDERR_FILENO, "jsh: parse error\n");
+            goto error;
+        }
+
+        // This condition means that we are inside a pipeline
+        // but not at the end, which means that we are not allowed to redirect stdout.
+        if (!(last_parsed_command_call == NULL || last_parsed_command_call_substitution == NULL)) {
+            if (command_builder->fds[1] != UNINITIALIZED_FD) {
+                dprintf(STDERR_FILENO, "jsh: parse error\n");
+                goto error;
+            }
         }
     }
 
@@ -759,8 +815,7 @@ command_call *parse_command_call(command *command, char *command_string, int ins
     char **redirection_parsed_command_string = malloc((not_null_arguments + 1) * sizeof(char *));
     if (redirection_parsed_command_string == NULL) {
         perror("malloc");
-        free(parsed_command_string);
-        return NULL;
+        goto error;
     }
     redirection_parsed_command_string[not_null_arguments] = NULL;
 
@@ -788,7 +843,7 @@ command_call *parse_command_call(command *command, char *command_string, int ins
     command_call *command_call =
         build_command(command_builder, not_null_arguments, redirection_parsed_command_string, removed_extra_pipes);
     free(removed_extra_pipes);
-    destroy_command_call_builder(command_builder);
+    soft_destroy_command_call_builder(command_builder);
 
     if (last_parsed_command_call == NULL && !inside_substitution) {
         last_parsed_command_call = command_call;
@@ -799,6 +854,16 @@ command_call *parse_command_call(command *command, char *command_string, int ins
     }
 
     return command_call;
+
+error:
+    for (size_t index = 0; index < argc; ++index) {
+        free(parsed_command_string[index]);
+    }
+    free(parsed_command_string);
+    close_unused_file_descriptors_from_array(command_builder->fds, 3);
+    destroy_command_call_builder(command_builder);
+
+    return NULL;
 }
 
 command **parse_read_line(char *command_string, size_t *total_commands) {

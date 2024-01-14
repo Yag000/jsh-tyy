@@ -1,0 +1,3 @@
+#ENABLE VALGRIND
+$ cat <( ./speak_friend 2>| mellon.err )
+$ cat mellon.err

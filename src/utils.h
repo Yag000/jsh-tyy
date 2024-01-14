@@ -46,4 +46,11 @@ char *in_blue(char *string);
 char *in_purple(char *string);
 char *in_cyan(char *string);
 
+/**
+ * Closes all file descriptors in the array.
+ * It will close them only once, so duplicates are well handled.
+ * If the file descritor corresponds to stdin, stdout or stderr, it will not be closed.
+ */
+void close_unused_file_descriptors_from_array(int *, size_t);
+
 #endif // UTILS_H
