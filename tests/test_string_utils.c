@@ -23,6 +23,7 @@ void test_case_trim_end_trim_spaces(test_info *info);
 void test_case_trim_both_trim_spaces(test_info *info);
 
 void test_case_string_made_of(test_info *info);
+void test_case_repeat(test_info *info);
 
 test_info *test_string_utils() {
     // Test setup
@@ -48,6 +49,7 @@ test_info *test_string_utils() {
     test_case_trim_end_trim_spaces(info);
     test_case_trim_both_trim_spaces(info);
     test_case_string_made_of(info);
+    test_case_repeat(info);
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
@@ -624,4 +626,46 @@ void test_case_string_made_of(test_info *info) {
 
     result = is_only_composed_of("ababababa", "ab");
     handle_int_test(0, result, __LINE__, __FILE__, info);
+}
+
+void test_case_repeat(test_info *info) {
+    char *result;
+
+    print_test_name("Testing `result`");
+
+    result = repeat(" ", 0);
+    handle_string_test("", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat("a", 0);
+    handle_string_test("", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat("azerfgbhn", 0);
+    handle_string_test("", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat(" ", 1);
+    handle_string_test(" ", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat("a", 1);
+    handle_string_test("a", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat("azerfgbhn", 1);
+    handle_string_test("azerfgbhn", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat(" ", 3);
+    handle_string_test("   ", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat("a", 4);
+    handle_string_test("aaaa", result, __LINE__, __FILE__, info);
+    free(result);
+
+    result = repeat("@#{", 6);
+    handle_string_test("@#{@#{@#{@#{@#{@#{", result, __LINE__, __FILE__, info);
+    free(result);
 }

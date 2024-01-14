@@ -83,4 +83,7 @@ int parse_intmax_t(char *string, intmax_t *res, int fd);
  */
 int is_only_composed_of(const char *str, const char *pattern);
 
+/** Returns a repeated string. */
+char *repeat(const char *str, size_t);
+
 #endif // STRING_UTILS_H
