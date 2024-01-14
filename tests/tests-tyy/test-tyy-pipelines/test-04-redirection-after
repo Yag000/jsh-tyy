@@ -1,0 +1,4 @@
+$ echo y | echo 2>| echo.err 
+$ cat echo.err
+$ echo | echo | head >| head.out
+$ cat head.out

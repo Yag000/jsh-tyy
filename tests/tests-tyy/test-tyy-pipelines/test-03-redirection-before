@@ -1,0 +1,2 @@
+$ echo y 2>| echo.err | echo 
+$ echo < TimeRidersExcerpt | echo | head

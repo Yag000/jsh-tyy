@@ -117,3 +117,32 @@ char *in_purple(char *string) {
 char *in_cyan(char *string) {
     return colored("\033[0;36m", string);
 }
+
+void close_unused_file_descriptors_from_array(int *fds_to_close, size_t nb_fds_to_close) {
+    if (fds_to_close == NULL) {
+        return;
+    }
+
+    int *set = malloc(nb_fds_to_close * sizeof(int));
+
+    if (set == NULL) {
+        perror("malloc");
+        return;
+    }
+
+    for (size_t index = 0; index < nb_fds_to_close; ++index) {
+        set[index] = -1;
+    }
+
+    for (size_t index = 0; index < nb_fds_to_close; ++index) {
+        add_set(set, nb_fds_to_close, fds_to_close[index]);
+    }
+
+    for (size_t index = 0; index < nb_fds_to_close; ++index) {
+        if (set[index] > 2) {
+            close(set[index]);
+        }
+    }
+
+    free(set);
+}
