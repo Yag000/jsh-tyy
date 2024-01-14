@@ -99,9 +99,8 @@ command **parse_read_line(char *command, size_t *total_commands);
 /** Structure that represents the result of a command.
  *  - If the command is an internal command or it is ran on foreground then
  *  `pid` is set to `UNINITIALIZED_PID` and `job_id` to `UNINITIALIZED_JOB_ID`.
- *  - If the `pid` is set to something else than `UNINITIALIZED_PID`, then the `command_call` will
- *  be `NULL`, as that information will be stored in the `job_table`, using
- *  `job_id - 1` as key.
+ *  - If the pid is something else than `UNINITIALIZED_PID` then the command
+ *  was ran on background. and `exit_code` is set to 0.
  * */
 typedef struct command_result {
     int exit_code;
