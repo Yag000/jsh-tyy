@@ -57,7 +57,7 @@ void destroy_subjob(subjob *j) {
     free(j);
 }
 
-job *new_job(size_t subjobs_size, job_type type, char *command_string) {
+job *new_job(size_t subjobs_size, char *command_string) {
     job *j = malloc(sizeof(job));
     j->id = UNINITIALIZED_JOB_ID;
 
@@ -79,7 +79,6 @@ job *new_job(size_t subjobs_size, job_type type, char *command_string) {
     j->command_string = command_string_copy;
 
     j->status = RUNNING;
-    j->type = type;
 
     return j;
 }
@@ -504,9 +503,6 @@ int put_job_in_foreground(job *job) {
         return 0;
     }
 
-    // Set the job's type as the FOREGROUND process group
-    job->type = FOREGROUND;
-
     // Wait for the job to be stopped or to be terminated
     int exit_code = blocking_wait_for_job(job);
 
@@ -545,9 +541,6 @@ int continue_job_in_background(job *job) {
         perror("kill (SIGCONT)");
         return 0;
     }
-
-    // Set the job's type as the BACKGROUND process group
-    job->type = BACKGROUND;
 
     return 1;
 }

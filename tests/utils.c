@@ -146,12 +146,6 @@ void handle_job_test(job *actual, job *expected, int line, const char *file, tes
         return;
     }
 
-    handle_int_test(actual->type, expected->type, line, file, info);
-    if (failed != info->failed) {
-        info->failed++;
-        return;
-    }
-
     handle_int_test(actual->subjobs_size, expected->subjobs_size, line, file, info);
     if (failed != info->failed) {
         info->failed++;
@@ -186,16 +180,16 @@ command_result *mute_command_execution(command *command) {
     return result;
 }
 
-job *new_single_command_job(command_call *command_call, pid_t pid, job_status status, job_type type) {
-    job *job = new_job(1, type, command_call->command_string);
+job *new_single_command_job(command_call *command_call, pid_t pid, job_status status) {
+    job *job = new_job(1, command_call->command_string);
     subjob *subjob = new_subjob(command_call, pid, status);
     job->subjobs[0] = subjob;
 
     return job;
 }
 
-job *job_from_command(command *command, pid_t pid, job_status status, job_type type) {
-    job *job = new_job(command->command_call_count, type, command->command_string);
+job *job_from_command(command *command, pid_t pid, job_status status) {
+    job *job = new_job(command->command_call_count, command->command_string);
     for (size_t i = 0; i < command->command_call_count; i++) {
         subjob *subjob = new_subjob(command->command_calls[i], pid, status);
         job->subjobs[i] = subjob;
