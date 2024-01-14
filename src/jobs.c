@@ -309,10 +309,14 @@ void update_job_status(job *j) {
         j->status = RUNNING;
     } else if (is_job_suspended(j)) {
         j->status = STOPPED;
-    } else if (is_job_killed(j)) {
-        j->status = KILLED;
     } else if (is_job_finished(j)) {
-        j->status = DONE;
+        if (kill(-j->pgid, 0) == 0) { // Ping to check existence
+            j->status = DETACHED;
+        } else if (is_job_killed(j)) {
+            j->status = KILLED;
+        } else {
+            j->status = DONE;
+        }
     } else {
         // Any other scenario should not
         // be possible, but we set the status
