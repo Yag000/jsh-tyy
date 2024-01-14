@@ -1,0 +1,4 @@
+$ echo 2>| echo1.err | echo 2>| echo2.err | head 2>| head.err
+$ cat echo1.err
+$ cat echo2.err
+$ cat head.err

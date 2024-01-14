@@ -8,6 +8,9 @@
 #include <unistd.h>
 
 void test_parse_multiple_same_redirections(test_info *info);
+void test_parse_errors(test_info *info);
+void test_pipelines_and_redirections(test_info *info);
+void test_substitutions_and_redirections(test_info *info);
 
 test_info *test_redirection_parsing() {
 
@@ -18,6 +21,9 @@ test_info *test_redirection_parsing() {
 
     // Add test here
     test_parse_multiple_same_redirections(info);
+    test_parse_errors(info);
+    test_pipelines_and_redirections(info);
+    test_substitutions_and_redirections(info);
 
     // End of tests
     info->time = clock_ticks_to_seconds(clock() - start);
@@ -82,4 +88,109 @@ void test_parse_multiple_same_redirections(test_info *info) {
     destroy_command_result(result);
 
     init_job_table();
+}
+
+void test_parse_errors(test_info *info) {
+    print_test_name("Parse redirections | Errors");
+
+    command *command = parse_command(" > ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" < /tmp/1");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" > /tmp/1");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo < ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("| echo");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("<( echo )");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo >| ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo >| /tmp/1 < ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo >| /tmp/1 < /tmp/2 2>");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo | ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo > | ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo |  sdasd <");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo | >");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo <( dqwdqw ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo <( a | b");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo | a <( | b");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command(" echo | | | b");
+    handle_null_test(command, __LINE__, __FILE__, info);
+}
+
+void test_pipelines_and_redirections(test_info *info) {
+    print_test_name("Parse redirections | Pipelines and redirections");
+
+    command *command = parse_command("echo a | echo b > /tmp/1 | echo c");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("echo a | echo b < /tmp/1 | echo c");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("echo a | echo b > /tmp/1 | echo c > /tmp/2");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("echo a < /tmp/1 | echo b > /tmp/2 | echo c ");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("echo a | echo b | echo c < /tmp/1");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("echo a > /tmp/1 | echo b | echo c");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("echo a > /tmp/1 | echo b | echo c < /tmp/2");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("echo a > /tmp/1 | echo b > /tmp/2 | echo c < /tmp/3");
+    handle_null_test(command, __LINE__, __FILE__, info);
+}
+
+void test_substitutions_and_redirections(test_info *info) {
+    print_test_name("Parse redirections | Substitutions and redirections");
+
+    command *command = parse_command("cat <( echo b > /tmp/1 )");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("cat <( echo b > /tmp/1 ) > /tmp/2");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("cat <( echo b > /tmp/1 ) > /tmp/2 < /tmp/3");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("cat  <( echo y | echo > /tmp/1 )");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("cat  <( echo y | echo > /tmp/1 ) < /tmp/2");
+    handle_null_test(command, __LINE__, __FILE__, info);
+
+    command = parse_command("cat  <( echo y ) | cat <( echo y | echo > /tmp/1 ) < /tmp/2");
+    handle_null_test(command, __LINE__, __FILE__, info);
 }
