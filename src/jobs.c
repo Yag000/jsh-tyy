@@ -1,13 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
-#include "command.h"
 #include "jobs.h"
+#include "command.h"
 #include "string_utils.h"
+
+#include <sys/wait.h>
 
 void destroy_job_table();
 

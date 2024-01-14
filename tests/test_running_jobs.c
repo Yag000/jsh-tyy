@@ -92,7 +92,7 @@ void test_case_are_jobs_running_one_instant_job(test_info *info) {
     int fd = open_test_file_to_write("test_running_jobs_one_instant_job_out.log");
     command *command = parse_command("ls");
     command->background = 1;
-    command->call->stdout = fd;
+    command->command_calls[0]->stdout = fd;
     command_result *result = execute_command(command);
 
     // Let the job finish

@@ -1,4 +1,3 @@
-#include "command.h"
 #include "internals.h"
 
 int last_exit_code_command(command_call *call) {

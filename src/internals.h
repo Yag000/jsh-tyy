@@ -11,24 +11,13 @@ extern int last_exit_code;
 /** Last working directory */
 extern char lwd[PATH_MAX];
 
-/** Separator used to split commands. In our case a single space character. */
-extern const char *COMMAND_SEPARATOR;
-
-extern const char *PIPE_SYMBOL;
-
-/** Indicator of a background execution. */
-extern const char *BACKGROUND_FLAG;
-
 /** 1 if the shell should exit, 0 otherwise. */
 extern int should_exit;
-
-/** The maximum size a prompt can have. */
-extern const size_t LIMIT_PROMPT_SIZE;
 
 /** Executes the command call. */
 command_result *execute_command(command *command);
 
-void close_unused_file_descriptors(command *command, command_call *command_call);
+void close_unused_file_descriptors(command *command);
 
 /** Updates the command history with the given command result. */
 void update_command_history(command_result *command_result);

@@ -1,10 +1,6 @@
-#include "internals.h"
 #include "jobs.h"
 #include "prompt.h"
 #include "signals.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 int main(int argc, char *argv[]) {
     if (argc > 1) {
