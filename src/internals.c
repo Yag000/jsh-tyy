@@ -16,6 +16,37 @@ int should_exit;
 int execute_internal_command(command_call *command_call);
 command_result *execute_external_command(command *command_call);
 
+#define UNINITIALIZED_EXIT_CODE -1
+
+typedef struct internal_exit_info {
+    pid_t pid;
+    int exit_code;
+} internal_exit_info;
+
+internal_exit_info *new_internal_exit_info(pid_t pid, int exit_code) {
+    internal_exit_info *info = malloc(sizeof(internal_exit_info));
+    if (info == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    info->pid = pid;
+    info->exit_code = exit_code;
+    return info;
+}
+
+void destroy_internal_exit_info(internal_exit_info *info) {
+    free(info);
+}
+
+int has_exit_code(internal_exit_info *info) {
+    if (info == NULL) {
+        return 0;
+    }
+
+    return info->exit_code != UNINITIALIZED_EXIT_CODE;
+}
+
 void init_internals() {
     last_exit_code = 0;
     should_exit = 0;
@@ -96,12 +127,10 @@ void close_writing_pipes(command *command, command_call *command_call) {
     }
 }
 
-pid_t execute_single_command(command *command, command_call *command_call, job *job) {
-    // TODO: Solve this gracefully and properly. When implementing pipelines, this could be
-    // a problem. (see !65)
+internal_exit_info *execute_single_command(command *command, command_call *command_call, job *job) {
     if (is_internal_command(command_call)) {
-        execute_internal_command(command_call);
-        return 0;
+        int exit_code = execute_internal_command(command_call);
+        return new_internal_exit_info(UNINITIALIZED_PID, exit_code);
     }
 
     // These 2 pipes ensure that the group is created at the right moment.
@@ -111,17 +140,17 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
     int fd_2[2];
     if (pipe(fd) == -1) {
         perror("pipe");
-        return 0;
+        return NULL;
     }
     if (pipe(fd_2) == -1) {
         perror("pipe");
-        return 0;
+        return NULL;
     }
 
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
-        exit(1);
+        return NULL;
     }
 
     if (pid == 0) {
@@ -182,7 +211,9 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
     // Telling the child the pgid it should use
     if (write(fd[1], &job->pgid, sizeof(int)) != sizeof(int)) {
         perror("write");
-        return 0;
+        kill(pid, SIGKILL); // It is important to kill the child if the parent fails to write
+                            // since the child would never know its pgid
+        return NULL;
     }
 
     close(fd[1]);
@@ -192,12 +223,14 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
     // Waiting for the child to set the pgid
     if (read(fd_2[0], &dump, sizeof(int)) != sizeof(int)) {
         perror("read");
-        return 0;
+        kill(pid, SIGKILL); // It is important to kill the child if the parent fails to read
+                            // since the child would never know that teh parent is waiting for it
+        return NULL;
     }
 
     close(fd_2[0]);
 
-    return pid;
+    return new_internal_exit_info(pid, UNINITIALIZED_EXIT_CODE);
 }
 
 /**
@@ -206,24 +239,34 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
  *
  * Returns the pid of the first executed command_call.
  */
-pid_t execute_as_job(command *command, job *job) {
-    pid_t pid = 0;
+internal_exit_info *execute_as_job(command *command, job *job) {
+    internal_exit_info *info = NULL;
 
     for (size_t i = 0; i < command->command_call_count; i++) {
 
-        pid_t pid_ = execute_single_command(command, command->command_calls[i], job);
+        internal_exit_info *info_ = execute_single_command(command, command->command_calls[i], job);
+
+        if (info_ == NULL) {
+            if (job->pgid != 0) {
+                kill(-job->pgid, SIGKILL); // If there was an error, kill the whole group
+            }
+            destroy_internal_exit_info(info);
+            return NULL;
+        }
 
         if (i == 0) {
-            pid = pid_;
+            info = new_internal_exit_info(info_->pid, info_->exit_code);
         }
 
-        if (pid_ != 0) {
-            subjob *subjob = new_subjob(command->command_calls[i], pid_, RUNNING);
+        if (info_->pid != UNINITIALIZED_PID) { // Avoid internal commands
+            subjob *subjob = new_subjob(command->command_calls[i], info_->pid, RUNNING);
             job->subjobs[i] = subjob;
         }
+
+        destroy_internal_exit_info(info_);
     }
 
-    return pid;
+    return info;
 }
 
 job *setup_job(command *command) {
@@ -235,13 +278,11 @@ job *setup_job(command *command) {
 
 /** Executes an external command call. */
 command_result *execute_external_command(command *command) {
-    pid_t pid;
-
     int background = command->background;
     command_result *command_result = new_command_result(1, command);
     job *job = setup_job(command);
 
-    pid = execute_as_job(command, job);
+    internal_exit_info *info = execute_as_job(command, job);
 
     for (size_t i = 0; i < command->open_pipes_size; i++) {
         if (command->open_pipes[i] == NULL) {
@@ -249,6 +290,11 @@ command_result *execute_external_command(command *command) {
         }
         close(command->open_pipes[i][0]);
         close(command->open_pipes[i][1]);
+    }
+
+    if (info == NULL) {
+        destroy_job(job);
+        return command_result;
     }
 
     if (background == 0) {
@@ -266,7 +312,12 @@ command_result *execute_external_command(command *command) {
         }
 
         if (job->status == DONE || job->status == KILLED || job->status == DETACHED) {
-            command_result->exit_code = exit_code;
+            if (has_exit_code(info)) {
+                // If the chief was an internal command, we need to use its exit code
+                command_result->exit_code = info->exit_code;
+            } else {
+                command_result->exit_code = exit_code;
+            }
             destroy_job(job);
         } else {
             int job_id = add_job(job);
@@ -274,9 +325,11 @@ command_result *execute_external_command(command *command) {
             print_job(job, STDERR_FILENO);
 
             command_result->job_id = job_id;
-            command_result->pid = pid;
+            command_result->pid = info->pid;
             command_result->exit_code = 0;
         }
+
+        destroy_internal_exit_info(info);
 
         return command_result;
     }
@@ -286,8 +339,10 @@ command_result *execute_external_command(command *command) {
     print_job(job, STDERR_FILENO);
 
     command_result->job_id = job_id;
-    command_result->pid = pid;
+    command_result->pid = info->pid;
     command_result->exit_code = 0;
+
+    destroy_internal_exit_info(info);
 
     return command_result;
 }

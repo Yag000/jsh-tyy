@@ -1,0 +1,7 @@
+#ENABLE VALGRIND
+
+$ ?
+$ ? | echo
+$ echo y | ?
+$ cat <( ? )
+

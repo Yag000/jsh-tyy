@@ -1,0 +1,10 @@
+#ENABLE VALGRIND
+
+$ pwd
+$ pwd >| pwd.out
+$ cat pwd.out
+$ pwd 2>| pwd.err
+$ cat pwd.err
+$ pwd | echo
+$ cat <( pwd )
+$ pwd | pwd
