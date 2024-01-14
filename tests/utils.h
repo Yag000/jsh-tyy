@@ -20,4 +20,9 @@ command_result *mute_command_execution(command *);
 
 job *new_single_command_job(command_call *, pid_t, job_status, job_type);
 
+/* Returns a new job with the given command, pid, status and type.
+ * All the subjobs will have the same status, type and pid.
+ */
+job *job_from_command(command *command, pid_t pid, job_status status, job_type type);
+
 #endif // UTILS_H

@@ -1,13 +1,8 @@
 #include "prompt.h"
-#include "command.h"
-#include "internals.h"
 #include "jobs.h"
 #include "utils.h"
+
 #include <readline/readline.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 char *get_prompt_string() {
     char *total_jobs = malloc(1024 * sizeof(char));

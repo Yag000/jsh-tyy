@@ -71,7 +71,7 @@ void test_no_arguments_command_call_print(test_info *info) {
     int fd = open_test_file_to_write("test_command_call_print.log");
 
     command *command = parse_command("pwd");
-    command_call_print(command->call, fd);
+    command_call_print(command->command_calls[0], fd);
 
     close(fd);
 
@@ -93,7 +93,7 @@ void test_command_call_print_with_arguments(test_info *info) {
     int fd = open_test_file_to_write("test_command_call_print.log");
 
     command *command = parse_command("pwd test");
-    command_call_print(command->call, fd);
+    command_call_print(command->command_calls[0], fd);
 
     close(fd);
 
@@ -112,7 +112,7 @@ void test_command_call_print_with_arguments(test_info *info) {
     fd = open_test_file_to_write("test_command_call_print.log");
 
     command = parse_command("pwd test test2");
-    command_call_print(command->call, fd);
+    command_call_print(command->command_calls[0], fd);
 
     close(fd);
 
@@ -145,7 +145,7 @@ void test_case_parse_command(test_info *info) {
 
     // Command call with no arguments
     command = parse_command("^mv^rm");
-    command_call = command->call;
+    command_call = command->command_calls[0];
     char *expected_1[1] = {"^mv^rm"};
     handle_string_test(expected_1[0], command_call->name, __LINE__, __FILE__, info);
     handle_int_test(1, command_call->argc, __LINE__, __FILE__, info);
@@ -157,7 +157,7 @@ void test_case_parse_command(test_info *info) {
 
     // Command call with few arguments
     command = parse_command("nvim -A /absolute/path/to/launch/in/neovim");
-    command_call = command->call;
+    command_call = command->command_calls[0];
     char *expected_2[3] = {"nvim", "-A", "/absolute/path/to/launch/in/neovim"};
     handle_string_test(expected_2[0], command_call->name, __LINE__, __FILE__, info);
     handle_int_test(3, command_call->argc, __LINE__, __FILE__, info);
@@ -173,7 +173,7 @@ void test_case_parse_command(test_info *info) {
 
     // Another command call with few arguments
     command = parse_command("rm -rf --no-preserve-root /");
-    command_call = command->call;
+    command_call = command->command_calls[0];
     char *expected_3[4] = {"rm", "-rf", "--no-preserve-root", "/"};
     handle_string_test(expected_3[0], command_call->name, __LINE__, __FILE__, info);
     handle_int_test(4, command_call->argc, __LINE__, __FILE__, info);

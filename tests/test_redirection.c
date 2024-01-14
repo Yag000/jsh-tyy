@@ -44,8 +44,8 @@ void test_redirection_stdin(test_info *info) {
     int output_fd = open_test_file_to_write("test_redirection_input_out.log");
 
     command *command = parse_command("cat");
-    command->call->stdin = fd;
-    command->call->stdout = output_fd;
+    command->command_calls[0]->stdin = fd;
+    command->command_calls[0]->stdout = output_fd;
     command->background = 1;
     command_result *result = execute_command(command);
 
@@ -72,7 +72,7 @@ void test_redirection_stdout(test_info *info) {
     int fd = open_test_file_to_write("test_redirection_output.log");
 
     command *command = parse_command("echo HelloWorld");
-    command->call->stdout = fd;
+    command->command_calls[0]->stdout = fd;
     command->background = 1;
     command_result *result = execute_command(command);
     sleep(1);
@@ -98,7 +98,7 @@ void test_redirection_stderr(test_info *info) {
     int fd = open_test_file_to_write("test_redirection_error.log");
 
     command *command = parse_command("mv .");
-    command->call->stderr = fd;
+    command->command_calls[0]->stderr = fd;
     command->background = 1;
     command_result *result = execute_command(command);
     sleep(1);

@@ -4,7 +4,6 @@
 #include <unistd.h>
 
 #include "../src/jobs.h"
-#include "../src/signals.h"
 #include "test_core.h"
 
 bool debug;
@@ -26,8 +25,6 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
-    ignore_signals();
 
     // Create the test info
     test_info *info = create_test_info();

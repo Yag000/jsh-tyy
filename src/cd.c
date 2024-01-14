@@ -1,14 +1,9 @@
 #include "command.h"
 #include "internals.h"
+
 #include <errno.h>
-#include <linux/limits.h>
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 bool is_valid_path(char *path, struct stat *p_stat, int call_stderr);
 bool is_valid_target_dir(char *target, int call_stderr);

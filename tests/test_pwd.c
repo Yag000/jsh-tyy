@@ -43,7 +43,7 @@ static void test_case_home(test_info *info) {
 
     // Go to $HOME
     command = parse_command("pwd");
-    command->call->stdout = fd;
+    command->command_calls[0]->stdout = fd;
     destroy_command_result(execute_command(command));
 
     // Go back to previous wd
@@ -77,7 +77,7 @@ static void test_case_deeper(test_info *info) {
 
     // Go to $HOME
     command = parse_command("pwd");
-    command->call->stdout = fd;
+    command->command_calls[0]->stdout = fd;
     destroy_command_result(execute_command(command));
 
     char *expected_path = get_current_wd();
@@ -114,7 +114,7 @@ void test_invalid_arguments(test_info *info) {
 
     command = parse_command("pwd test");
     int error_fd = open_test_file_to_write("test_last_exit_code_command_invalid_arguments.log");
-    command->call->stderr = error_fd;
+    command->command_calls[0]->stderr = error_fd;
     result = execute_command(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);

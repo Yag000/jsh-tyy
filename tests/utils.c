@@ -59,10 +59,18 @@ void handle_command_test(command *actual, command *expected, int line, const cha
 
     int failed = info->failed;
 
-    handle_command_call_test(actual->call, expected->call, line, file, info);
+    handle_int_test(actual->command_call_count, expected->command_call_count, line, file, info);
     if (failed != info->failed) {
         info->failed++;
         return;
+    }
+
+    for (size_t i = 0; i < actual->command_call_count; i++) {
+        handle_command_call_test(actual->command_calls[i], expected->command_calls[i], line, file, info);
+        if (failed != info->failed) {
+            info->failed++;
+            return;
+        }
     }
 
     handle_int_test(actual->background, expected->background, line, file, info);
@@ -183,5 +191,14 @@ job *new_single_command_job(command_call *command_call, pid_t pid, job_status st
     subjob *subjob = new_subjob(command_call, pid, status);
     job->subjobs[0] = subjob;
 
+    return job;
+}
+
+job *job_from_command(command *command, pid_t pid, job_status status, job_type type) {
+    job *job = new_job(command->command_call_count, type, command->command_string);
+    for (size_t i = 0; i < command->command_call_count; i++) {
+        subjob *subjob = new_subjob(command->command_calls[i], pid, status);
+        job->subjobs[i] = subjob;
+    }
     return job;
 }

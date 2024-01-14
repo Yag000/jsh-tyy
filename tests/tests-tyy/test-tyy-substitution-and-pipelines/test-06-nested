@@ -1,0 +1,6 @@
+#ENABLE VALGRIND
+$ cat <( cat ALPHABET | echo ) | head -n 1 | cat <( echo 789 ) <( echo 101112 )
+$ cat <( cat ALPHABET | echo ) | cat <( cat NUMBERS | cat -n )
+$ cat <( cat ALPHABET | cat ) 
+$ cat <( cat ALPHABET | cat ) | cat <( cat ALPHABET | cat ) 
+$ cat <( cat ALPHABET | cat ) | cat <( cat ALPHABET | cat ) | cat <( cat NUMBERS | cat -n )
