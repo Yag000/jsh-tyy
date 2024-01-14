@@ -8,12 +8,19 @@
 #include <string.h>
 #include <unistd.h>
 
-#define REDIRECTION_CARET_SYMBOLS_COUNT 9
+#define REDIRECTION_CARET_SYMBOLS_COUNT 10
 #define INTERNAL_COMMANDS_COUNT 8
 #define UNINITIALIZED_PID -2
 
+/** Separator used to split commands. In our case a single space character. */
+#define COMMAND_SEPARATOR " "
+
+/** Indicator of a background execution. */
+#define BACKGROUND_FLAG "&"
+
 #define COMMAND_SUBSTITUTION_START "<("
 #define COMMAND_SUBSTITUTION_END ")"
+#define PIPE_SYMBOL "|"
 
 /** Array of internal command names. */
 extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
@@ -21,16 +28,25 @@ extern const char internal_commands[INTERNAL_COMMANDS_COUNT][100];
 /** Array of possible caret symbols. */
 extern const char *redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT];
 
+typedef struct pipe_info {
+    int *pipes;
+    size_t pipe_count;
+} pipe_info;
+
+pipe_info *new_pipe_info();
+
+void destroy_pipe_info(pipe_info *);
+
+void add_pipe_pipe_info(pipe_info *, int);
+
 /** Structure that represents a command call. */
 typedef struct command_call {
     char *name;
     size_t argc;
     char **argv;
     char *command_string;
-    struct command_call **dependencies;
-    size_t dependencies_count;
-    struct pipe_info *reading_pipes;
-    struct pipe_info *writing_pipes;
+    pipe_info *reading_pipes;
+    pipe_info *writing_pipes;
     int stdin;
     int stdout;
     int stderr;
@@ -54,14 +70,17 @@ void command_call_print(command_call *command_call, int fd);
 int is_internal_command(command_call *command_call);
 
 typedef struct command {
-    command_call *call;
     char *command_string;
+    command_call **command_calls;
+    size_t command_call_count;
     int background; // 1 if the command is to be executed in background, 0 otherwise
     int **open_pipes;
     size_t open_pipes_size;
 } command;
 
-command *new_command(command_call *call, int **open_pipes, size_t open_pipes_size, char *command_string);
+command *new_command(command_call **call, size_t command_call_count, int **open_pipes, size_t open_pipes_size,
+                     char *command_string);
+
 void destroy_command(command *command);
 
 /** Parse unique command string to `command_call`.
@@ -98,16 +117,5 @@ command_result *new_command_result(int exit_code, command *command);
  *  Calls `destroy_command_call` to free `command_result-> call`.
  */
 void destroy_command_result(command_result *command_result);
-
-typedef struct pipe_info {
-    int *pipes;
-    size_t pipe_count;
-} pipe_info;
-
-pipe_info *new_pipe_info();
-
-void destroy_pipe_info(pipe_info *);
-
-void add_pipe(pipe_info *, int);
 
 #endif // COMMAND_H

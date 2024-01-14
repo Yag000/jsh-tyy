@@ -16,6 +16,14 @@ JJJJJJJJJ
 KKKKKKKKK
 EOF
 
+
+cat > NUMBERS << "EOF"
+111111111
+222222222
+333333333
+444444444
+EOF
+
 cat > my_cat <<"EOF"
 #!/bin/bash
 F="$1"

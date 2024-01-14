@@ -1,8 +1,7 @@
-#include "command.h"
 #include "internals.h"
 #include "utils.h"
+
 #include <errno.h>
-#include <stdio.h>
 
 int pwd(command_call *command_call) {
 

@@ -48,7 +48,7 @@ void test_promt_string_with_one_jobs(test_info *info) {
     init_job_table();
 
     command *command = parse_command("pwd");
-    job *job = new_single_command_job(command->call, 100, RUNNING, FOREGROUND);
+    job *job = new_single_command_job(command->command_calls[0], 100, RUNNING, FOREGROUND);
     destroy_command(command);
     add_job(job);
 
@@ -73,7 +73,7 @@ void test_promt_string_with_jobs(test_info *info) {
     for (int i = 0; i < 100; i++) {
 
         command *command = parse_command("pwd");
-        job *job = new_single_command_job(command->call, 100, RUNNING, FOREGROUND);
+        job *job = new_single_command_job(command->command_calls[0], 100, RUNNING, FOREGROUND);
         add_job(job);
         destroy_command(command);
 
@@ -99,7 +99,7 @@ void test_promt_string_remove_jobs(test_info *info) {
     for (int i = 0; i < 100; i++) {
 
         command *command = parse_command("pwd");
-        job *job = new_single_command_job(command->call, 100, RUNNING, FOREGROUND);
+        job *job = new_single_command_job(command->command_calls[0], 100, RUNNING, FOREGROUND);
         destroy_command(command);
 
         add_job(job);

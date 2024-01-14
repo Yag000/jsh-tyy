@@ -1,15 +1,7 @@
-#include <assert.h>
 #include <errno.h>
-#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <time.h>
-#include <unistd.h>
 
-#include "command.h"
 #include "internals.h"
 #include "jobs.h"
 #include "signals.h"
@@ -17,16 +9,12 @@
 
 int last_exit_code;
 char lwd[PATH_MAX];
-const char *COMMAND_SEPARATOR = " ";
-const char *BACKGROUND_FLAG = "&";
-const char *PIPE_SYMBOL = " | ";
 const size_t LIMIT_PROMPT_SIZE = 30;
 
 int should_exit;
 
 int execute_internal_command(command_call *command_call);
 command_result *execute_external_command(command *command_call);
-void close_unused_file_descriptors(command *command, command_call *command_call);
 
 void init_internals() {
     last_exit_code = 0;
@@ -36,16 +24,15 @@ void init_internals() {
 
 command_result *execute_command(command *command) {
     command_result *result;
-    command_call *command_call = command->call;
 
-    if (is_internal_command(command_call) && command_call->dependencies_count == 0) {
-        int exit_code = execute_internal_command(command_call);
+    if (command->command_call_count == 1 && is_internal_command(command->command_calls[0])) {
+        int exit_code = execute_internal_command(command->command_calls[0]);
         result = new_command_result(exit_code, command);
     } else {
         result = execute_external_command(command);
     }
 
-    close_unused_file_descriptors(command, command->call);
+    close_unused_file_descriptors(command);
 
     update_command_history(result);
     return result;
@@ -217,49 +204,31 @@ pid_t execute_single_command(command *command, command_call *command_call, job *
  * Executes a command call as a job, it assumes the job has enough room to fit
  * all the calls.
  *
- * Returns the pid of the executed command_call (not it's dependencies).
+ * Returns the pid of the first executed command_call.
  */
-pid_t execute_as_job(command *command, command_call *command_call, job *job) {
-    size_t index;
+pid_t execute_as_job(command *command, job *job) {
+    pid_t pid = 0;
 
-    for (index = 0; index < job->subjobs_size; index++) {
-        if (job->subjobs[index] == NULL) {
-            break;
+    for (size_t i = 0; i < command->command_call_count; i++) {
+
+        pid_t pid_ = execute_single_command(command, command->command_calls[i], job);
+
+        if (i == 0) {
+            pid = pid_;
         }
-    }
 
-    // This should never happen, if it's the case then there is a huge
-    // issue with the code (this should maybe be changed to something
-    // more graceful).
-    assert(index < job->subjobs_size);
-
-    pid_t pid = execute_single_command(command, command_call, job);
-
-    if (pid != 0) {
-        subjob *subjob = new_subjob(command_call, pid, RUNNING);
-        job->subjobs[index] = subjob;
-    }
-
-    for (size_t i = 0; i < command_call->dependencies_count; i++) {
-        execute_as_job(command, command_call->dependencies[i], job);
+        if (pid_ != 0) {
+            subjob *subjob = new_subjob(command->command_calls[i], pid_, RUNNING);
+            job->subjobs[i] = subjob;
+        }
     }
 
     return pid;
 }
 
-size_t count_dependencies(command_call *command_call) {
-    size_t dependencies_count = 1;
-
-    for (size_t i = 0; i < command_call->dependencies_count; i++) {
-        dependencies_count += count_dependencies(command_call->dependencies[i]);
-    }
-
-    return dependencies_count;
-}
-
 job *setup_job(command *command) {
     job_type job_type = command->background ? BACKGROUND : FOREGROUND;
-    size_t dependencies_count = count_dependencies(command->call);
+    size_t dependencies_count = command->command_call_count;
     job *job = new_job(dependencies_count, job_type, command->command_string);
 
     return job;
@@ -273,7 +242,7 @@ command_result *execute_external_command(command *command) {
     command_result *command_result = new_command_result(1, command);
     job *job = setup_job(command);
 
-    pid = execute_as_job(command, command->call, job);
+    pid = execute_as_job(command, job);
 
     for (size_t i = 0; i < command->open_pipes_size; i++) {
         if (command->open_pipes[i] == NULL) {
@@ -285,14 +254,16 @@ command_result *execute_external_command(command *command) {
 
     if (background == 0) {
         int exit_code = blocking_wait_for_job(job);
-        if (exit_code == -1) {
-            perror("waitpid");
-            exit(1);
-        }
 
         if (tcsetpgrp(STDERR_FILENO, getpgrp()) == -1) {
             perror("tcsetpgrp");
             exit(1);
+        }
+
+        if (exit_code == -1) {
+            perror("waitpid");
+            destroy_job(job);
+            return command_result;
         }
 
         if (job->status == DONE || job->status == KILLED || job->status == DETACHED) {
@@ -329,7 +300,7 @@ void update_command_history(command_result *result) {
     }
 }
 
-void close_unused_file_descriptors(command *command, command_call *command_call) {
+void close_unused_file_descriptors_helper(command *command, command_call *command_call) {
     if (command == NULL) {
         return;
     }
@@ -357,9 +328,15 @@ void close_unused_file_descriptors(command *command, command_call *command_call)
         }
     }
 
-    for (size_t i = 0; i < command_call->dependencies_count; i++) {
-        close_unused_file_descriptors(command, command_call->dependencies[i]);
+    free(fds_to_close);
+}
+
+void close_unused_file_descriptors(command *command) {
+    if (command == NULL) {
+        return;
     }
 
-    free(fds_to_close);
+    for (size_t index = 0; index < command->command_call_count; ++index) {
+        close_unused_file_descriptors_helper(command, command->command_calls[index]);
+    }
 }

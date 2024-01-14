@@ -165,7 +165,7 @@ static void test_cd_path_non_existent(test_info *info) {
     int log_fd = open_test_file_to_write("cd_non_existent_dir.log");
 
     command *call_cd_non_existent = parse_command("cd tmp/dir/does/not/exits");
-    call_cd_non_existent->call->stderr = log_fd;
+    call_cd_non_existent->command_calls[0]->stderr = log_fd;
 
     command_result *res = execute_command(call_cd_non_existent);
 
@@ -193,7 +193,7 @@ static void test_cd_path_is_not_dir(test_info *info) {
     int log_fd = open_test_file_to_write("cd_non_dir.log");
 
     command *call_cd_non_dir = parse_command("cd tmp/file");
-    call_cd_non_dir->call->stderr = log_fd;
+    call_cd_non_dir->command_calls[0]->stderr = log_fd;
 
     command_result *res = execute_command(call_cd_non_dir);
 
@@ -222,7 +222,7 @@ static void test_cd_symlink(test_info *info) {
     int log_fd = open_test_file_to_write("cd_symlink.log");
 
     command *call_cd_symlink = parse_command("cd tmp/dir/subdir/symlink_source");
-    call_cd_symlink->call->stderr = log_fd;
+    call_cd_symlink->command_calls[0]->stderr = log_fd;
 
     command_result *res = execute_command(call_cd_symlink);
 

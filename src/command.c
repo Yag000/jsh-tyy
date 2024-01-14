@@ -5,19 +5,23 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <linux/limits.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 const char internal_commands[INTERNAL_COMMANDS_COUNT][100] = {"cd", "exit", "pwd", "?", "jobs", "fg", "bg", "kill"};
 
 const char *redirection_caret_symbols[REDIRECTION_CARET_SYMBOLS_COUNT] = {
-    ">", "<", ">|", ">>", "2>", "2>|", "2>>", COMMAND_SUBSTITUTION_START, COMMAND_SUBSTITUTION_END};
+    ">", "<", ">|", ">>", "2>", "2>|", "2>>", COMMAND_SUBSTITUTION_START, COMMAND_SUBSTITUTION_END, PIPE_SYMBOL};
 
-command_call *parse_command_call(char *, int **, size_t *);
+// This variable represents the last command call on the main pipeline
+// for example in a | b | c it should be c
+// and in a | b | c <( d ) it should also be c
+// The call to `parse_command` resets it.
+command_call *last_parsed_command_call = NULL;
+
+// The same as the previous one but this is limited to a particular
+// substitution. It gets reset every time we parse a new substitution.
+command_call *last_parsed_command_call_substitution = NULL;
+
+command_call *parse_command_call(command *, char *, int);
 
 /** Returns a new command call with the given name, argc and argv. */
 command_call *new_command_call(size_t argc, char **argv, char *command_string) {
@@ -32,8 +36,6 @@ command_call *new_command_call(size_t argc, char **argv, char *command_string) {
     command_call->argv = argv;
     command_call->reading_pipes = NULL;
     command_call->writing_pipes = NULL;
-    command_call->dependencies = NULL;
-    command_call->dependencies_count = 0;
     command_call->stdin = STDIN_FILENO;
     command_call->stdout = STDOUT_FILENO;
     command_call->stderr = STDERR_FILENO;
@@ -58,13 +60,6 @@ void destroy_command_call(command_call *command_call) {
 
     for (size_t index = 0; index < command_call->argc; index++) {
         free(command_call->argv[index]);
-    }
-
-    if (command_call->dependencies != NULL) {
-        for (size_t i = 0; i < command_call->dependencies_count; i++) {
-            destroy_command_call(command_call->dependencies[i]);
-        }
-        free(command_call->dependencies);
     }
 
     free(command_call->argv);
@@ -113,7 +108,8 @@ void destroy_command_result(command_result *command_result) {
     free(command_result);
 }
 
-command *new_command(command_call *call, int **open_pipes, size_t open_pipes_size, char *command_string) {
+command *new_command(command_call **call, size_t command_call_count, int **open_pipes, size_t open_pipes_size,
+                     char *command_string) {
     command *command = malloc(sizeof(*command));
 
     if (command == NULL) {
@@ -121,7 +117,8 @@ command *new_command(command_call *call, int **open_pipes, size_t open_pipes_siz
         return NULL;
     }
 
-    command->call = call;
+    command->command_calls = call;
+    command->command_call_count = command_call_count;
     command->background = 0;
     command->open_pipes = open_pipes;
     command->open_pipes_size = open_pipes_size;
@@ -137,8 +134,43 @@ command *new_command(command_call *call, int **open_pipes, size_t open_pipes_siz
     return command;
 }
 
+command *new_empty_command(char *command_string) {
+    if (command_string == NULL) {
+        return NULL;
+    }
+    if (strlen(command_string) == 0) {
+        return NULL;
+    }
+    if (is_only_composed_of(command_string, COMMAND_SEPARATOR)) {
+        return NULL;
+    }
+
+    command *command = malloc(sizeof(*command));
+
+    if (command == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    command->command_calls = NULL;
+    command->command_call_count = 0;
+    command->command_string = NULL;
+    command->background = 0;
+    command->open_pipes = NULL;
+    command->open_pipes_size = 0;
+
+    return command;
+}
+
 void destroy_command(command *command) {
-    destroy_command_call(command->call);
+    if (command == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; i < command->command_call_count; i++) {
+        destroy_command_call(command->command_calls[i]);
+    }
+    free(command->command_calls);
 
     for (size_t i = 0; i < command->open_pipes_size; i++) {
         free(command->open_pipes[i]);
@@ -150,29 +182,19 @@ void destroy_command(command *command) {
 }
 
 typedef struct command_call_builder {
-    command_call **dependencies;
-    int dependencies_count;
-
     int *fds;
     pipe_info *reading_pipes;
     pipe_info *writing_pipes;
 
 } command_call_builder;
 
-command_call_builder *new_command_call_builder(size_t argc) {
+command_call_builder *new_command_call_builder() {
     command_call_builder *c = malloc(sizeof(command_call));
 
     if (c == NULL) {
         perror("malloc");
         return NULL;
     }
-
-    command_call **dependencies = malloc(argc * sizeof(command_call *));
-    if (dependencies == NULL) {
-        perror("malloc");
-        return NULL;
-    }
-    size_t dependencies_count = 0;
 
     pipe_info *reading_pipe_info = new_pipe_info();
     if (reading_pipe_info == NULL) {
@@ -193,9 +215,6 @@ command_call_builder *new_command_call_builder(size_t argc) {
     fds[0] = -1;
     fds[1] = -1;
     fds[2] = -1;
-
-    c->dependencies = dependencies;
-    c->dependencies_count = dependencies_count;
 
     c->fds = fds;
     c->reading_pipes = reading_pipe_info;
@@ -233,7 +252,25 @@ void destroy_pipe_info(pipe_info *pi) {
     free(pi);
 }
 
-void add_pipe(pipe_info *pi, int index) {
+int add_pipe(command *command, int *pipe) {
+    if (command == NULL) {
+        return -1;
+    }
+
+    command->open_pipes = reallocarray(command->open_pipes, command->open_pipes_size + 1, sizeof(int *));
+
+    if (command->open_pipes == NULL) {
+        perror("reallocarray");
+        return -1;
+    }
+
+    command->open_pipes[command->open_pipes_size] = pipe;
+    command->open_pipes_size++;
+
+    return 0;
+}
+
+void add_pipe_pipe_info(pipe_info *pi, int index) {
     if (pi == NULL) {
         return;
     }
@@ -263,15 +300,42 @@ void add_pipe(pipe_info *pi, int index) {
     return;
 }
 
-int trim_arrays(command_call_builder *builder) {
-    builder->dependencies = reallocarray(builder->dependencies, builder->dependencies_count, sizeof(command_call *));
-
-    if (builder->dependencies == NULL) {
-        perror("reallocarray");
-        return -1;
+void add_call_at_the_beginning(command *command, command_call *call) {
+    if (command == NULL || call == NULL) {
+        return;
     }
 
-    return 0;
+    command_call **new_command_calls = malloc((command->command_call_count + 1) * sizeof(command_call *));
+    if (new_command_calls == NULL) {
+        perror("malloc");
+        return;
+    }
+
+    new_command_calls[0] = call;
+
+    for (size_t index = 0; index < command->command_call_count; ++index) {
+        new_command_calls[index + 1] = command->command_calls[index];
+    }
+
+    free(command->command_calls);
+    command->command_calls = new_command_calls;
+    command->command_call_count++;
+}
+
+void add_call_at_the_end(command *command, command_call *call) {
+    if (command == NULL || call == NULL) {
+        return;
+    }
+
+    command->command_calls =
+        reallocarray(command->command_calls, command->command_call_count + 1, sizeof(command_call *));
+    if (command->command_calls == NULL) {
+        perror("reallocarray");
+        return;
+    }
+
+    command->command_calls[command->command_call_count] = call;
+    command->command_call_count++;
 }
 
 command_call *build_command(command_call_builder *builder, size_t argc, char **argv, char *command_string) {
@@ -292,20 +356,6 @@ command_call *build_command(command_call_builder *builder, size_t argc, char **a
 
     command->writing_pipes = builder->writing_pipes;
     command->reading_pipes = builder->reading_pipes;
-
-    if (builder->dependencies_count == 0) {
-        free(builder->dependencies);
-        return command;
-    }
-
-    int error = trim_arrays(builder);
-
-    if (error == -1) {
-        return NULL;
-    }
-
-    command->dependencies_count = builder->dependencies_count;
-    command->dependencies = builder->dependencies;
 
     return command;
 }
@@ -398,18 +448,17 @@ void update_dependencies(command_call_builder *builder, command_call *command_ca
         return;
     }
 
-    builder->dependencies[builder->dependencies_count] = command_call;
-    add_pipe(builder->reading_pipes, index);
-    add_pipe(command_call->writing_pipes, index);
-    builder->dependencies_count++;
+    add_pipe_pipe_info(builder->reading_pipes, index);
+    add_pipe_pipe_info(command_call->writing_pipes, index);
 }
 
-int parse_command_substitution(command_call_builder *builder, char **command_string, size_t positions_left,
-                               size_t *index, int **open_pipes, size_t *total_pipes) {
+int parse_command_substitution(command *command, command_call_builder *builder, char **command_string,
+                               size_t positions_left, size_t *index) {
+
+    last_parsed_command_call_substitution = NULL;
+
     size_t i;
-
     int starts_found = 0;
-
     for (i = 0; i < positions_left; i++) {
 
         if (strcmp(command_string[i], COMMAND_SUBSTITUTION_START) == 0) {
@@ -429,7 +478,7 @@ int parse_command_substitution(command_call_builder *builder, char **command_str
         return -1;
     }
 
-    int pipe_pos = *total_pipes;
+    int pipe_pos = command->open_pipes_size;
 
     int *fd = malloc(2 * sizeof(int));
 
@@ -443,18 +492,26 @@ int parse_command_substitution(command_call_builder *builder, char **command_str
         return -1;
     }
 
-    open_pipes[*total_pipes] = fd;
-    *total_pipes += 1;
+    add_pipe(command, fd);
 
     char *joined_command = join_strings(command_string, i, " ");
-    command_call *command = parse_command_call(joined_command, open_pipes, total_pipes);
+    if (joined_command == NULL) {
+        return -1;
+    }
+    command_call *call = parse_command_call(command, joined_command, 1);
     free(joined_command);
 
-    if (command == NULL) {
+    if (last_parsed_command_call_substitution == NULL) {
+        free(fd);
         return -1;
     }
 
-    command->stdout = fd[1];
+    if (call == NULL) {
+        free(fd);
+        return -1;
+    }
+
+    last_parsed_command_call_substitution->stdout = fd[1];
 
     char *dev_file = malloc(PATH_MAX * sizeof(char));
 
@@ -475,104 +532,38 @@ int parse_command_substitution(command_call_builder *builder, char **command_str
 
     *index = *index + i + 1;
 
-    update_dependencies(builder, command, pipe_pos);
+    update_dependencies(builder, last_parsed_command_call_substitution, pipe_pos);
+
+    last_parsed_command_call_substitution = NULL;
+
+    add_call_at_the_end(command, call);
 
     return 0;
 }
 
-/**
- * Add `dep` as a dependency of `call`.
- */
-int add_depencencies(command_call *call, command_call *dep) {
-    if (call == NULL || dep == NULL) {
+int link_pipelines(command *command, command_call_builder *prev, command_call *call) {
+
+    int *fd = malloc(2 * sizeof(int));
+
+    if (fd == NULL) {
+        perror("malloc");
         return -1;
     }
 
-    if (call->dependencies == NULL) {
-
-        call->dependencies = malloc(sizeof(command_call *));
-        if (call->dependencies == NULL) {
-            perror("malloc");
-            return -1;
-        }
-
-        call->dependencies[0] = dep;
-        call->dependencies_count++;
-        return 0;
-    }
-
-    call->dependencies = reallocarray(call->dependencies, call->dependencies_count + 1, sizeof(command_call *));
-
-    if (call->dependencies == NULL) {
-        perror("reallocarray");
+    if (pipe(fd) == -1) {
+        perror("pipe");
         return -1;
     }
 
-    call->dependencies[call->dependencies_count] = dep;
-    call->dependencies_count++;
+    add_pipe_pipe_info(prev->writing_pipes, command->open_pipes_size);
+    add_pipe_pipe_info(call->reading_pipes, command->open_pipes_size);
+
+    add_pipe(command, fd);
+
+    prev->fds[1] = fd[1];
+    call->stdin = fd[0];
+
     return 0;
-}
-
-command_call *parse_command_call_with_pipes(char *command_string, int **open_pipes, size_t *total_pipes) {
-
-    size_t total_commands = 0;
-
-    char **pipes_splitted_str = split_string(command_string, PIPE_SYMBOL, &total_commands);
-
-    if (pipes_splitted_str == NULL) {
-        return NULL;
-    }
-
-    command_call *prev = NULL;
-    command_call *main_command = NULL;
-
-    // Compute commands from last to first; last command being the main one.
-    for (int index = total_commands - 1; index >= 0; --index) {
-
-        command_call *call = parse_command_call(pipes_splitted_str[index], open_pipes, total_pipes);
-
-        if (prev == NULL) {
-            prev = call;
-            main_command = call;
-            continue;
-        }
-
-        int result = add_depencencies(prev, call);
-
-        if (result < 0) {
-            return NULL;
-        }
-
-        int *fd = malloc(2 * sizeof(int));
-
-        if (fd == NULL) {
-            perror("malloc");
-            return NULL;
-        }
-
-        if (pipe(fd) == -1) {
-            perror("pipe");
-            return NULL;
-        }
-
-        add_pipe(prev->reading_pipes, *total_pipes);
-        add_pipe(call->writing_pipes, *total_pipes);
-
-        open_pipes[*total_pipes] = fd;
-        *total_pipes += 1;
-
-        prev->stdin = fd[0];
-        call->stdout = fd[1];
-
-        prev = call;
-    }
-
-    for (size_t index = 0; index < total_commands; ++index) {
-        free(pipes_splitted_str[index]);
-    }
-    free(pipes_splitted_str);
-
-    return main_command;
 }
 
 char *sanitize_command_string(char *command_string) {
@@ -581,48 +572,82 @@ char *sanitize_command_string(char *command_string) {
 }
 
 command *parse_command(char *command_string) {
+    command *command = new_empty_command(command_string);
 
-    string_iterator *iterator = new_string_iterator(command_string, COMMAND_SEPARATOR);
-    if (iterator == NULL) {
+    if (command == NULL) {
         return NULL;
-    }
-    int max_open_pipes_size = get_number_of_words_left(iterator);
-    destroy_string_iterator(iterator);
-
-    int **open_pipes = malloc(max_open_pipes_size * sizeof(int *));
-    if (open_pipes == NULL) {
-        perror("malloc");
-        return NULL;
-    }
-    size_t total_pipes = 0;
-
-    command_call *call = parse_command_call_with_pipes(command_string, open_pipes, &total_pipes);
-
-    if (call == NULL) {
-        free(open_pipes);
-        return NULL;
-    }
-
-    if (total_pipes == 0) {
-        free(open_pipes);
-        open_pipes = NULL;
-    } else {
-        open_pipes = reallocarray(open_pipes, total_pipes, sizeof(int *));
-
-        if (open_pipes == NULL) {
-            perror("reallocarray");
-            return NULL;
-        }
     }
 
     char *sanitized_command_string = sanitize_command_string(command_string);
-    command *command = new_command(call, open_pipes, total_pipes, sanitized_command_string);
-    free(sanitized_command_string);
+    if (sanitized_command_string == NULL) {
+        destroy_command(command);
+        return NULL;
+    }
+    command->command_string = sanitized_command_string;
+
+    last_parsed_command_call = NULL;
+
+    command_call *call = parse_command_call(command, command_string, 0);
+
+    if (call == NULL) {
+        destroy_command(command);
+        return NULL;
+    }
+
+    if (last_parsed_command_call == NULL) {
+        destroy_command_call(call);
+        destroy_command(command);
+        return NULL;
+    }
+
+    if (last_parsed_command_call != call) {
+        add_call_at_the_end(command, call);
+    }
+
+    add_call_at_the_beginning(command, last_parsed_command_call);
+
+    last_parsed_command_call = NULL;
 
     return command;
 }
 
-command_call *parse_command_call(char *command_string, int **open_pipes, size_t *total_pipes) {
+char *remove_extra_pipes(char *command_string) {
+    char *result = malloc((strlen(command_string) + 1) * sizeof(char));
+    if (result == NULL) {
+        perror("malloc");
+        return NULL;
+    }
+
+    int found_substitutions = 0;
+    size_t i;
+
+    for (i = 0; i < strlen(command_string); i++) {
+        // I'd rather avoid this kind of hacks but for this time it's ok
+        if (command_string[i] == '(') {
+            found_substitutions++;
+        } else if (command_string[i] == ')') {
+            found_substitutions--;
+        } else {
+            // This means that we have a pipe that it's not inside a substitution
+            // so we ignore the rest of the string
+            if (command_string[i] == '|' && found_substitutions == 0) {
+                break;
+            }
+        }
+        result[i] = command_string[i];
+    }
+
+    result[i] = '\0';
+    result = reallocarray(result, i + 1, sizeof(char));
+    if (result == NULL) {
+        perror("reallocarray");
+        return NULL;
+    }
+
+    return result;
+}
+
+command_call *parse_command_call(command *command, char *command_string, int inside_substitution) {
     size_t argc;
     char **parsed_command_string = split_string(command_string, COMMAND_SEPARATOR, &argc);
     if (argc == 0) {
@@ -630,7 +655,7 @@ command_call *parse_command_call(char *command_string, int **open_pipes, size_t 
         return NULL;
     }
 
-    command_call_builder *command_builder = new_command_call_builder(argc);
+    command_call_builder *command_builder = new_command_call_builder();
     if (command_builder == NULL) {
         free(parsed_command_string);
         return NULL;
@@ -668,14 +693,42 @@ command_call *parse_command_call(char *command_string, int **open_pipes, size_t 
             free(parsed_command_string[index]);
             parsed_command_string[index] = NULL;
 
-            if (parse_command_substitution(command_builder, parsed_command_string + index + 1, argc - index - 1, &index,
-                                           open_pipes, total_pipes) == -1) {
+            if (parse_command_substitution(command, command_builder, parsed_command_string + index + 1,
+                                           argc - index - 1, &index) == -1) {
 
                 dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
                 free(parsed_command_string);
                 return NULL;
             }
+        } else if (strcmp(parsed_command_string[index], PIPE_SYMBOL) == 0) {
+            char *joined = join_strings(parsed_command_string + index + 1, argc - index - 1, " ");
 
+            command_call *pipped_command_call = parse_command_call(command, joined, inside_substitution);
+            free(joined);
+            if (pipped_command_call == NULL) {
+                dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
+                free(parsed_command_string);
+                return NULL;
+            }
+
+            if (link_pipelines(command, command_builder, pipped_command_call) == -1) {
+                dprintf(STDERR_FILENO, "jsh: parse error near %s\n", parsed_command_string[index]);
+                free(parsed_command_string);
+                return NULL;
+            }
+
+            if (last_parsed_command_call != pipped_command_call || inside_substitution) {
+                add_call_at_the_end(command, pipped_command_call);
+            }
+
+            // A pipe indicated the end of a command, so no need to parse the rest since
+            // `pipped_command_call` has already done it.
+            for (size_t i = index; i < argc; i++) {
+                free(parsed_command_string[i]);
+                parsed_command_string[i] = NULL;
+            }
+
+            break;
         } else {
             int status = parse_redirections(command_builder->fds, parsed_command_string[index],
                                             parsed_command_string[index + 1]);
@@ -720,13 +773,32 @@ command_call *parse_command_call(char *command_string, int **open_pipes, size_t 
 
     free(parsed_command_string);
 
-    char *trimmed_command_string = trim_spaces(command_string);
-    command_call *command =
-        build_command(command_builder, not_null_arguments, redirection_parsed_command_string, trimmed_command_string);
+    char *trimmed_command_string = sanitize_command_string(command_string);
+    if (trimmed_command_string == NULL) {
+        free(redirection_parsed_command_string);
+        return NULL;
+    }
+    char *removed_extra_pipes = remove_extra_pipes(trimmed_command_string);
+    if (removed_extra_pipes == NULL) {
+        free(trimmed_command_string);
+        free(redirection_parsed_command_string);
+        return NULL;
+    }
     free(trimmed_command_string);
+    command_call *command_call =
+        build_command(command_builder, not_null_arguments, redirection_parsed_command_string, removed_extra_pipes);
+    free(removed_extra_pipes);
     destroy_command_call_builder(command_builder);
 
-    return command;
+    if (last_parsed_command_call == NULL && !inside_substitution) {
+        last_parsed_command_call = command_call;
+    }
+
+    if (last_parsed_command_call_substitution == NULL && inside_substitution) {
+        last_parsed_command_call_substitution = command_call;
+    }
+
+    return command_call;
 }
 
 command **parse_read_line(char *command_string, size_t *total_commands) {

@@ -61,7 +61,7 @@ void test_exit_no_arguments_previous_command(test_info *info) {
 
     int stderr_fd = open_test_file_to_write("test_exit_no_arguments_previous_command.log");
     command = parse_command("? e423423 423 423 42");
-    command->call->stderr = stderr_fd;
+    command->command_calls[0]->stderr = stderr_fd;
     result = execute_command(command);
     destroy_command_result(result);
 
@@ -85,7 +85,7 @@ void test_exit_multiple_arguments(test_info *info) {
 
     command = parse_command("exit 1 2 3");
     error_fd = open_test_file_to_write("test_exit_multiple_arguments.log");
-    command->call->stderr = error_fd;
+    command->command_calls[0]->stderr = error_fd;
     result = execute_command(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
@@ -131,7 +131,7 @@ void test_exit_string_argument(test_info *info) {
     command = parse_command("exit test");
 
     error_fd = open_test_file_to_write("test_exit_string_argument.log");
-    command->call->stderr = error_fd;
+    command->command_calls[0]->stderr = error_fd;
     result = execute_command(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
@@ -153,7 +153,7 @@ void test_exit_out_of_range_argument(test_info *info) {
     command = parse_command("exit 256");
 
     error_fd = open_test_file_to_write("test_exit_out_of_range_argument_256.log");
-    command->call->stderr = error_fd;
+    command->command_calls[0]->stderr = error_fd;
     result = execute_command(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
@@ -166,7 +166,7 @@ void test_exit_out_of_range_argument(test_info *info) {
     command = parse_command("exit -1");
 
     error_fd = open_test_file_to_write("test_exit_out_of_range_argument_negative.log");
-    command->call->stderr = error_fd;
+    command->command_calls[0]->stderr = error_fd;
     result = execute_command(command);
 
     handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
@@ -188,10 +188,10 @@ void test_exit_with_running_jobs(test_info *info) {
     int fd = open_test_file_to_write("test_exit_with_running_jobs_out.log");
     command *background_job = parse_command("sleep 1");
     background_job->background = 1;
-    background_job->call->stderr = fd;
+    background_job->command_calls[0]->stderr = fd;
 
     command *exit_fail = parse_command("exit");
-    exit_fail->call->stderr = dup(fd);
+    exit_fail->command_calls[0]->stderr = dup(fd);
 
     command_result *result_job = mute_command_execution(background_job);
     command_result *result_exit_fail = execute_command(exit_fail);
