@@ -12,8 +12,6 @@ typedef enum job_status { RUNNING, STOPPED, DETACHED, KILLED, DONE } job_status;
 /** Returns a string representation of the job status. */
 char *job_status_to_string(job_status);
 
-typedef enum job_type { FOREGROUND, BACKGROUND } job_type;
-
 typedef struct subjob {
     char *command;
     pid_t pid;
@@ -27,7 +25,6 @@ typedef struct job {
     pid_t pgid; // Process group id for all the subjobs
     char *command_string;
     subjob **subjobs;
-    job_type type;
 } job;
 
 /** Returns a new subjob with the given command call, pid, last status and type. */
@@ -40,7 +37,7 @@ void destroy_subjob(subjob *);
 
 /** Returns a new job with the given subjobs size and name, the
  * subjobs will be set to NULL. */
-job *new_job(size_t, job_type, char *);
+job *new_job(size_t, char *);
 
 /** Frees the memory allocated for the job.
  *  Calls `destroy_subjob` on all the job's subjobs.

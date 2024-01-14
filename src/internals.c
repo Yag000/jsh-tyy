@@ -227,9 +227,8 @@ pid_t execute_as_job(command *command, job *job) {
 }
 
 job *setup_job(command *command) {
-    job_type job_type = command->background ? BACKGROUND : FOREGROUND;
     size_t dependencies_count = command->command_call_count;
-    job *job = new_job(dependencies_count, job_type, command->command_string);
+    job *job = new_job(dependencies_count, command->command_string);
 
     return job;
 }
