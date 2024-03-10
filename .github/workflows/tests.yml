@@ -1,0 +1,45 @@
+
+name: Integration tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: yag000/c_tools:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unit tests
+        run: make test-unit
+
+      - name: Valgrind
+        run: make test-valgrind
+
+  integration-tests:
+    runs-on: yag000/c_tools:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Integration tests
+        run: make test-tyy
+
+  requirements-tests:
+    runs-on: yag000/c_tools:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Integration tests
+        run: TEST_FOLDER_FILTER=jalon make test-professor
+          | TEST_FOLDER_FILTER=rendu-final-A make test-professor
+          | TEST_FOLDER_FILTER=rendu-final-B make test-professor
+          | TEST_FOLDER_FILTER=rendu-final-D make test-professor
