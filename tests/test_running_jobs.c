@@ -25,7 +25,7 @@ test_info *test_running_jobs() {
         SLOW_CASE("Testing are_jobs_running - One killed job", test_case_are_jobs_running_kill),
         SLOW_CASE("Testing are_jobs_running - One stopped job", test_case_are_jobs_running_stop)};
 
-    test_info *info = run_cases("running jobs", cases, NUM_TEST);
+    test_info *info = cinta_run_cases("running jobs", cases, NUM_TEST);
 
     init_job_table();
     return info;

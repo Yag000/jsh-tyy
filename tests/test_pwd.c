@@ -18,7 +18,7 @@ test_info *test_pwd() {
                                  QUICK_CASE("Testing `cd tmp/dir && pwd`", test_case_deeper),
                                  QUICK_CASE("Testing `pwd([:whitespace:]+.+)+`", test_invalid_arguments)};
 
-    return run_cases("pwd", cases, NUM_TEST);
+    return cinta_run_cases("pwd", cases, NUM_TEST);
 }
 
 static void test_case_home(test_info *info) {

@@ -1,4 +1,3 @@
-#include "../include/cinta.h"
 #include "test_core.h"
 
 #define NUM_TESTS 13

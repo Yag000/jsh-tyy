@@ -13,7 +13,7 @@ test_info *test_utils() {
                                        QUICK_CASE("remove_from_set", test_case_remove_from_set),
                                        QUICK_CASE("contains", test_case_contains)};
 
-    return run_cases("utils", test_cases, NUM_TESTS);
+    return cinta_run_cases("utils", test_cases, NUM_TESTS);
 }
 
 void test_case_add_to_set(test_info *info) {

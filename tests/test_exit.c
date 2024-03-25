@@ -24,7 +24,7 @@ test_info *test_exit() {
         QUICK_CASE("exit out of range argument", test_exit_out_of_range_argument),
         SLOW_CASE("exit with running jobs", test_exit_with_running_jobs)};
 
-    test_info *info = run_cases("exit", cases, NUM_TEST);
+    test_info *info = cinta_run_cases("exit", cases, NUM_TEST);
 
     init_internals();
     return info;

@@ -20,7 +20,7 @@ test_info *test_redirection_parsing() {
                                  QUICK_CASE("Pipelines and redirections", test_pipelines_and_redirections),
                                  QUICK_CASE("Substitutions and redirections", test_substitutions_and_redirections)};
 
-    return run_cases("redirection_parsing", cases, NUM_TEST);
+    return cinta_run_cases("redirection_parsing", cases, NUM_TEST);
 }
 
 int assert_file_is_empty(const int fd) {

@@ -34,7 +34,7 @@ test_info *test_cd() {
                           QUICK_CASE("Testing cd on a non-directory file", test_cd_path_is_not_dir),
                           QUICK_CASE("Testing cd on a symlink", test_cd_symlink)};
 
-    test_info *info = run_cases("cd", cases, NUM_TEST);
+    test_info *info = cinta_run_cases("cd", cases, NUM_TEST);
 
     init_cwd_and_lwd();
     return info;

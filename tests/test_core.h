@@ -1,5 +1,3 @@
-// Original code developed by Yago Iglesias for a
-// c project. Github: https://github.com/Yag000/l2_s4_c-project
 #ifndef TEST_CORE_H
 #define TEST_CORE_H
 
@@ -7,7 +5,7 @@
 #include <stdbool.h>
 #include <time.h>
 
-#include "../include/cinta.h"
+#include "../cinta/cinta.h"
 #include "../src/command.h"
 #include "../src/jobs.h"
 

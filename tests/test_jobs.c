@@ -60,7 +60,7 @@ test_info *test_jobs() {
         QUICK_CASE("Testing jobs command - without jobs running", test_jobs_command_without_jobs_running),
         SLOW_CASE("Testing jobs command - with jobs running", test_jobs_command_with_jobs_running)};
 
-    test_info *info = run_cases("jobs", cases, NUM_TEST);
+    test_info *info = cinta_run_cases("jobs", cases, NUM_TEST);
 
     // End of tests
     init_job_table();

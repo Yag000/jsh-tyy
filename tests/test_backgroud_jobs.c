@@ -1,4 +1,3 @@
-#include "../include/cinta.h"
 #include "../src/command.h"
 #include "../src/jobs.h"
 #include "test_core.h"
@@ -12,7 +11,7 @@ void test_launching_multiple_bg_jobs(test_info *);
 test_info *test_background_jobs() {
     test_case cases[NUM_TEST] = {QUICK_CASE("Testing launching one background job", test_launching_one_bg_job),
                           QUICK_CASE("Testing launching multiple background jobs", test_launching_multiple_bg_jobs)};
-    return run_cases("test", cases, NUM_TEST);
+    return cinta_run_cases("test", cases, NUM_TEST);
 }
 
 void test_launching_one_bg_job(test_info *info) {

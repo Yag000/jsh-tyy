@@ -22,24 +22,33 @@ TEST_VALGRIND=$(SCRIPTSDIR)/test_valgrind.sh
 TEST_PROFESSOR=$(SCRIPTSDIR)/test_professor.sh
 TEST_TYY=$(SCRIPTSDIR)/test_tyy.sh
 
-CINTA=include/cinta.h cinta/cinta.c
+CINTA=cinta
+CINTAOBJDIR=$(OBJDIR)/cinta
+CINTAOBJ=$(CINTAOBJDIR)/cinta.o
 
 SRCFILES := $(shell find $(SRCDIR) -type f -name "*.c")
-TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c") $(CINTA)
+CINTAFILES := $(shell find $(CINTA) -type f -name "*.c")
+TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c") 
 
 OBJFILES := $(patsubst $(SRCDIR)/%.c,$(SRCOBJDIR)/%.o,$(SRCFILES))
-TESTOBJFILES := $(patsubst $(TESTDIR)/%.c,$(TESTOBJDIR)/%.o,$(TESTFILES))
+CINTAOBJFILES := $(patsubst $(CINTA)/%.c,$(CINTAOBJDIR)/%.o,$(CINTAFILES))
+TESTOBJFILES := $(patsubst $(TESTDIR)/%.c,$(TESTOBJDIR)/%.o,$(TESTFILES)) 
+
 
 ALLFILES := $(SRCFILES) $(TESTFILES) $(shell find $(SRCDIR) $(TESTDIR) -type f -name "*.h") 
 
 # Create obj directory at the beginning
 $(shell mkdir -p $(SRCOBJDIR))
 $(shell mkdir -p $(TESTOBJDIR))
+$(shell mkdir -p $(CINTAOBJDIR))
 
 $(SRCOBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TESTOBJDIR)/%.o: $(TESTDIR)/%.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(CINTAOBJDIR)/%.o: $(CINTA)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 .PHONY: all, clean, format, test
@@ -77,10 +86,10 @@ test-professor:
 test-tyy:
 	./$(TEST_TYY) 
 
-compile_tests_valgrind: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES)
+compile_tests_valgrind: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
 	$(CC) -o $(TEST) $^ -g $(CFLAGS)
 
-compile_tests: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES)
+compile_tests: $(filter-out $(SRCOBJDIR)/$(EXEC).o, $(OBJFILES)) $(TESTOBJFILES) $(CINTAOBJFILES)
 	$(CC) -o $(TEST) $^ $(CFLAGS)
 
 setup_test_env:

@@ -16,7 +16,7 @@ test_info *test_last_exit_code_command() {
                                  QUICK_CASE("? command after failed command", test_after_failed_command),
                                  QUICK_CASE("? command after successful command", test_after_successful_command)};
 
-    return run_cases("?", cases, NUM_TEST);
+    return cinta_run_cases("?", cases, NUM_TEST);
 }
 
 void test_invalid_arguments(test_info *info) {

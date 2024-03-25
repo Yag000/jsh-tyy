@@ -18,7 +18,7 @@ test_info *test_redirection() {
                                  SLOW_CASE("Testing output redirection", test_redirection_stdout),
                                  SLOW_CASE("Testing error redirection", test_redirection_stderr)};
 
-    return run_cases("redirection", cases, NUM_TEST);
+    return cinta_run_cases("redirection", cases, NUM_TEST);
 }
 
 void test_redirection_stdin(test_info *info) {

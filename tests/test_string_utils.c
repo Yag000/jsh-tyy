@@ -49,7 +49,7 @@ test_info *test_string_utils() {
         QUICK_CASE("Testing `is_only_composed_of`", test_case_string_made_of),
         QUICK_CASE("Testing `repeat`", test_case_repeat)};
 
-    return run_cases("String Utils", cases, NUM_TEST);
+    return cinta_run_cases("String Utils", cases, NUM_TEST);
 }
 
 static void test_case_new_string_iterator(test_info *info) {

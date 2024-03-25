@@ -18,7 +18,7 @@ test_info *test_prompt() {
         QUICK_CASE("Testing prompt string with jobs", test_promt_string_with_jobs),
         QUICK_CASE("Testing prompt string with jobs and removing them", test_promt_string_remove_jobs)};
 
-    return run_cases("prompt", cases, NUM_TEST);
+    return cinta_run_cases("prompt", cases, NUM_TEST);
 }
 
 void test_promt_string_no_jobs(test_info *info) {

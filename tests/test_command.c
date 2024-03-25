@@ -1,4 +1,3 @@
-#include "../include/cinta.h"
 #include "../src/command.h"
 #include "test_core.h"
 #include <fcntl.h>
@@ -41,7 +40,7 @@ test_info *test_command() {
         QUICK_CASE("& Parsing | a & b - With args - With spaces", test_complex_background_parsing_args_spaces),
         QUICK_CASE("& Parsing | a & b & - With args - No spaces", test_complex_background_parsing_args_no_spaces),
         QUICK_CASE("& Parsing | a & b - With args - With spaces", test_complex_full_background_parsing_args_spaces)};
-    return run_cases("command", cases, NUM_TEST);
+    return cinta_run_cases("command", cases, NUM_TEST);
 }
 
 void test_destroy_command_call_null(test_info *info) {

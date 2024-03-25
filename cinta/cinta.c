@@ -12,7 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../include/cinta.h"
+#include "cinta.h"
 
 static bool debug = false;
 static bool allow_slow = true;
@@ -107,7 +107,7 @@ void run_case(test_case test, test_info *info) {
     test.function(info);
 }
 
-test_info *run_cases(const char *name, test_case *cases, int size) {
+test_info *cinta_run_cases(const char *name, test_case *cases, int size) {
     print_test_header(name);
     clock_t start = clock();
     test_info *info = create_test_info();
