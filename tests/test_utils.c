@@ -2,24 +2,18 @@
 #include "test_core.h"
 #include <stdlib.h>
 
+#define NUM_TESTS 3
+
 void test_case_add_to_set(test_info *info);
 void test_case_remove_from_set(test_info *info);
 void test_case_contains(test_info *info);
 
 test_info *test_utils() {
-    // Test setup
-    print_test_header("test_utils");
-    clock_t start = clock();
-    test_info *info = create_test_info();
+    test_case test_cases[NUM_TESTS] = {QUICK_CASE("add_to_set", test_case_add_to_set),
+                                       QUICK_CASE("remove_from_set", test_case_remove_from_set),
+                                       QUICK_CASE("contains", test_case_contains)};
 
-    test_case_add_to_set(info);
-    test_case_remove_from_set(info);
-    test_case_contains(info);
-
-    // End of tests
-    info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("test_utils", info);
-    return info;
+    return run_cases("utils", test_cases, NUM_TESTS);
 }
 
 void test_case_add_to_set(test_info *info) {
@@ -33,14 +27,14 @@ void test_case_add_to_set(test_info *info) {
     for (size_t index = 0; index < 100; ++index) {
         int status = add_set(set, 100, (int)index);
 
-        handle_int_test(0, status, __LINE__, __FILE__, info);
-        handle_int_test((int)index, set[index], __LINE__, __FILE__, info);
+        CINTA_ASSERT_INT(0, status, info);
+        CINTA_ASSERT_INT((int)index, set[index], info);
     }
 
     for (size_t index = 0; index < 101; ++index) {
         int status = add_set(set, 100, (int)index);
 
-        handle_int_test(-1, status, __LINE__, __FILE__, info);
+        CINTA_ASSERT_INT(-1, status, info);
     }
 
     free(set);
@@ -61,13 +55,13 @@ void test_case_remove_from_set(test_info *info) {
     for (size_t index = 100; index < 200; ++index) {
         int status = remove_set(set, 100, (int)index);
 
-        handle_int_test(-1, status, __LINE__, __FILE__, info);
+        CINTA_ASSERT_INT(-1, status, info);
     }
 
     for (size_t index = 0; index < 100; ++index) {
         int status = remove_set(set, 100, (int)index);
 
-        handle_int_test(0, status, __LINE__, __FILE__, info);
+        CINTA_ASSERT_INT(0, status, info);
     }
 
     free(set);
@@ -85,7 +79,7 @@ void test_case_contains(test_info *info) {
     for (size_t index = 0; index < 200; ++index) {
         int status = contains(set, 100, (int)index);
 
-        handle_boolean_test(index % 2 == 0, status, __LINE__, __FILE__, info);
+        CINTA_ASSERT_INT(index % 2 == 0, status, info);
     }
 
     free(set);

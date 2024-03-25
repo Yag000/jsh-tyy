@@ -4,31 +4,24 @@
 #include "utils.h"
 #include <string.h>
 
+#define NUM_TEST 4
+
 void test_promt_string_no_jobs(test_info *);
 void test_promt_string_with_one_jobs(test_info *);
 void test_promt_string_with_jobs(test_info *);
 void test_promt_string_remove_jobs(test_info *);
 
 test_info *test_prompt() {
-    // Test setup
-    print_test_header("prompt");
-    clock_t start = clock();
-    test_info *info = create_test_info();
+    test_case cases[NUM_TEST] = {
+        QUICK_CASE("Testing prompt string with no jobs", test_promt_string_no_jobs),
+        QUICK_CASE("Testing prompt string with one job", test_promt_string_with_one_jobs),
+        QUICK_CASE("Testing prompt string with jobs", test_promt_string_with_jobs),
+        QUICK_CASE("Testing prompt string with jobs and removing them", test_promt_string_remove_jobs)};
 
-    // Add tests here
-    test_promt_string_no_jobs(info);
-    test_promt_string_with_one_jobs(info);
-    test_promt_string_with_jobs(info);
-    test_promt_string_remove_jobs(info);
-
-    // End of tests
-    info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("prompt", info);
-    return info;
+    return run_cases("prompt", cases, NUM_TEST);
 }
 
 void test_promt_string_no_jobs(test_info *info) {
-    print_test_name("Testing prompt string with no jobs");
 
     init_job_table();
 
@@ -37,13 +30,12 @@ void test_promt_string_no_jobs(test_info *info) {
 
     char *expected = ("\001\033[0;33m\002");
     prompt_string[strlen(expected)] = '\0';
-    handle_string_test(prompt_string, expected, __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(prompt_string, expected, info);
 
     free(prompt_string);
 }
 
 void test_promt_string_with_one_jobs(test_info *info) {
-    print_test_name("Testing prompt string with jobs");
 
     init_job_table();
 
@@ -56,7 +48,7 @@ void test_promt_string_with_one_jobs(test_info *info) {
 
     char *expected = ("\001\033[0;33m\002[1]");
     prompt_string[strlen(expected)] = '\0';
-    handle_string_test(prompt_string, expected, __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(prompt_string, expected, info);
 
     free(prompt_string);
 
@@ -64,7 +56,6 @@ void test_promt_string_with_one_jobs(test_info *info) {
 }
 
 void test_promt_string_with_jobs(test_info *info) {
-    print_test_name("Testing prompt string with jobs");
 
     init_job_table();
 
@@ -82,7 +73,7 @@ void test_promt_string_with_jobs(test_info *info) {
         char *prompt_string = get_prompt_string();
         prompt_string[strlen(expected)] = '\0';
 
-        handle_string_test(prompt_string, expected, __LINE__, __FILE__, info);
+        CINTA_ASSERT_STRING(prompt_string, expected, info);
         free(prompt_string);
     }
 
@@ -92,7 +83,6 @@ void test_promt_string_with_jobs(test_info *info) {
 }
 
 void test_promt_string_remove_jobs(test_info *info) {
-    print_test_name("Testing prompt string with jobs");
 
     init_job_table();
 
@@ -114,7 +104,7 @@ void test_promt_string_remove_jobs(test_info *info) {
         char *prompt_string = get_prompt_string();
         prompt_string[strlen(expected)] = '\0';
 
-        handle_string_test(prompt_string, expected, __LINE__, __FILE__, info);
+        CINTA_ASSERT_STRING(prompt_string, expected, info);
         free(prompt_string);
     }
 

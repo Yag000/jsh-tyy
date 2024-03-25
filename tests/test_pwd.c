@@ -7,32 +7,22 @@
 #include <string.h>
 #include <unistd.h>
 
+#define NUM_TEST 3
+
 static void test_case_home(test_info *);
 static void test_case_deeper(test_info *);
 static void test_invalid_arguments(test_info *);
 
 test_info *test_pwd() {
+    test_case cases[NUM_TEST] = {QUICK_CASE("Testing `cd && pwd`", test_case_home),
+                                 QUICK_CASE("Testing `cd tmp/dir && pwd`", test_case_deeper),
+                                 QUICK_CASE("Testing `pwd([:whitespace:]+.+)+`", test_invalid_arguments)};
 
-    // Test setup
-    print_test_header("pwd");
-    clock_t start = clock();
-    test_info *info = create_test_info();
-
-    // Add tests here
-    test_case_home(info);
-    test_case_deeper(info);
-    test_invalid_arguments(info);
-
-    // End of tests
-    info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("pwd", info);
-    return info;
+    return run_cases("pwd", cases, NUM_TEST);
 }
 
 static void test_case_home(test_info *info) {
     command *command, *cd_command;
-
-    print_test_name("Testing `cd && pwd`");
 
     // Get $HOME env var
     char *expected_path = getenv("HOME");
@@ -60,16 +50,14 @@ static void test_case_home(test_info *info) {
     char buffer_newline[2];
     buffer_newline[1] = '\0';
     int eof = read(read_fd, buffer_newline, 2);
-    handle_int_test(1, eof, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(1, eof, info);
     close(read_fd);
 
-    handle_string_test(expected_path, buffer, __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(expected_path, buffer, info);
 }
 
 static void test_case_deeper(test_info *info) {
     command *command, *cd_command;
-
-    print_test_name("Testing `cd tmp/dir && pwd`");
 
     int fd = open_test_file_to_write("test_pwd.log");
     cd_command = parse_command("cd tmp/dir");
@@ -97,18 +85,16 @@ static void test_case_deeper(test_info *info) {
     char buffer_newline[2];
     buffer_newline[1] = '\0';
     int eof = read(read_fd, buffer_newline, 2);
-    handle_int_test(1, eof, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(1, eof, info);
     close(read_fd);
 
-    handle_string_test(expected_path, buffer, __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(expected_path, buffer, info);
     free(expected_path);
 }
 
 void test_invalid_arguments(test_info *info) {
     command *command;
     command_result *result;
-
-    print_test_name("Testing `pwd([:whitespace:]+.+)+`");
 
     init_internals();
 
@@ -117,7 +103,7 @@ void test_invalid_arguments(test_info *info) {
     command->command_calls[0]->stderr = error_fd;
     result = execute_command(command);
 
-    handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(result->exit_code, 1, info);
 
     destroy_command_result(result);
 }

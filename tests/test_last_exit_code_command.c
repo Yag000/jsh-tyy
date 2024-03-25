@@ -3,27 +3,20 @@
 #include "test_core.h"
 #include <unistd.h>
 
+#define NUM_TEST 4
+
 void test_invalid_arguments(test_info *);
 void test_as_first_command(test_info *);
 void test_after_failed_command(test_info *);
 void test_after_successful_command(test_info *);
 
 test_info *test_last_exit_code_command() {
-    // Test setup
-    print_test_header("? command");
-    clock_t start = clock();
-    test_info *info = create_test_info();
+    test_case cases[NUM_TEST] = {QUICK_CASE("? command with invalid arguments", test_invalid_arguments),
+                                 QUICK_CASE("? command as first command", test_as_first_command),
+                                 QUICK_CASE("? command after failed command", test_after_failed_command),
+                                 QUICK_CASE("? command after successful command", test_after_successful_command)};
 
-    // Test body
-    test_invalid_arguments(info);
-    test_as_first_command(info);
-    test_after_failed_command(info);
-    test_after_successful_command(info);
-
-    // End of tests
-    info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("? command", info);
-    return info;
+    return run_cases("?", cases, NUM_TEST);
 }
 
 void test_invalid_arguments(test_info *info) {
@@ -32,7 +25,6 @@ void test_invalid_arguments(test_info *info) {
     command_result *result;
 
     int error_fd;
-    print_test_name("? command with invalid arguments");
 
     init_internals();
 
@@ -41,7 +33,7 @@ void test_invalid_arguments(test_info *info) {
     command->command_calls[0]->stderr = error_fd;
     result = execute_command(command);
 
-    handle_int_test(result->exit_code, 1, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(result->exit_code, 1, info);
 
     destroy_command_result(result);
 }
@@ -52,8 +44,6 @@ void test_as_first_command(test_info *info) {
     command_result *result;
 
     int out_fd;
-    print_test_name("? command as first command");
-
     init_internals();
 
     command = parse_command("?");
@@ -61,7 +51,7 @@ void test_as_first_command(test_info *info) {
     command->command_calls[0]->stdout = out_fd;
     result = execute_command(command);
 
-    handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(result->exit_code, 0, info);
 
     destroy_command_result(result);
 }
@@ -73,7 +63,6 @@ void test_after_failed_command(test_info *info) {
 
     int out_fd;
     int error_fd;
-    print_test_name("? command after failed command");
 
     init_internals();
 
@@ -89,7 +78,7 @@ void test_after_failed_command(test_info *info) {
     command->command_calls[0]->stdout = out_fd;
     result = execute_command(command);
 
-    handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(result->exit_code, 0, info);
 
     destroy_command_result(result);
 
@@ -98,7 +87,7 @@ void test_after_failed_command(test_info *info) {
     read(read_fd, error_code, 1);
     error_code[1] = '\0';
     close(read_fd);
-    handle_string_test(error_code, "1", __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(error_code, "1", info);
     free(error_code);
 }
 
@@ -107,7 +96,6 @@ void test_after_successful_command(test_info *info) {
 
     command_result *result;
 
-    print_test_name("? command after successful command");
     int out_fd = open_test_file_to_write("test_last_exit_code_command_after_successful_command.log");
 
     init_internals();
@@ -124,7 +112,7 @@ void test_after_successful_command(test_info *info) {
     command->command_calls[0]->stdout = out_fd;
     result = execute_command(command);
 
-    handle_int_test(result->exit_code, 0, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(result->exit_code, 0, info);
 
     destroy_command_result(result);
 
@@ -133,6 +121,6 @@ void test_after_successful_command(test_info *info) {
     read(read_fd, error_code, 1);
     error_code[1] = '\0';
     close(read_fd);
-    handle_string_test(error_code, "0", __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(error_code, "0", info);
     free(error_code);
 }

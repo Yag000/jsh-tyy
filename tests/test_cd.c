@@ -11,6 +11,8 @@ static char project_dir[PATH_MAX];
 
 void init_cwd_and_lwd();
 
+#define NUM_TEST 7
+
 static void test_cd_user_home(test_info *);
 static void test_cd_path_valid(test_info *);
 static void test_cd_previous_exists(test_info *);
@@ -20,28 +22,21 @@ static void test_cd_path_is_not_dir(test_info *);
 static void test_cd_symlink(test_info *);
 
 test_info *test_cd() {
-    // Test setup
-    print_test_header("cd");
-    clock_t start = clock();
-    test_info *info = create_test_info();
-
     // Remember project directory
     memset(project_dir, '\0', PATH_MAX);
     getcwd(project_dir, PATH_MAX);
 
-    // Add tests here
-    test_cd_user_home(info);
-    test_cd_path_valid(info);
-    test_cd_previous_exists(info);
-    test_cd_previous_non_existent(info);
-    test_cd_path_non_existent(info);
-    test_cd_path_is_not_dir(info);
-    test_cd_symlink(info);
+    test_case cases[NUM_TEST] = {QUICK_CASE("Testing `cd`", test_cd_user_home),
+                          QUICK_CASE("Testing `cd tmp/dir`", test_cd_path_valid),
+                          QUICK_CASE("Testing `cd -` when `lwd` exists", test_cd_previous_exists),
+                          QUICK_CASE("Testing `cd -` when `lwd` doesn't exist", test_cd_previous_non_existent),
+                          QUICK_CASE("Testing with an non-existent dir", test_cd_path_non_existent),
+                          QUICK_CASE("Testing cd on a non-directory file", test_cd_path_is_not_dir),
+                          QUICK_CASE("Testing cd on a symlink", test_cd_symlink)};
 
-    // End of tests
+    test_info *info = run_cases("cd", cases, NUM_TEST);
+
     init_cwd_and_lwd();
-    info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("cd", info);
     return info;
 }
 
@@ -51,8 +46,6 @@ void init_cwd_and_lwd() {
 }
 
 static void test_cd_user_home(test_info *info) {
-    print_test_name("Testing `cd`");
-
     init_cwd_and_lwd();
 
     char *expected_cwd = getenv("HOME");
@@ -61,22 +54,20 @@ static void test_cd_user_home(test_info *info) {
     command *call_cd_user_home = parse_command("cd");
     command_result *result = execute_command(call_cd_user_home);
 
-    handle_int_test(0, result->exit_code, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, result->exit_code, info);
 
     destroy_command_result(result);
 
     char *new_cwd = getcwd(NULL, PATH_MAX);
 
-    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
-    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(expected_cwd, new_cwd, info);
+    CINTA_ASSERT_STRING(expected_lwd, lwd, info);
 
     free(expected_lwd);
     free(new_cwd);
 }
 
 static void test_cd_path_valid(test_info *info) {
-    print_test_name("Testing `cd tmp/dir`");
-
     init_cwd_and_lwd();
 
     char target_path[] = "tmp/dir";
@@ -89,9 +80,9 @@ static void test_cd_path_valid(test_info *info) {
 
     char *new_cwd = getcwd(NULL, PATH_MAX);
 
-    handle_int_test(0, res->exit_code, __LINE__, __FILE__, info);
-    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
-    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, res->exit_code, info);
+    CINTA_ASSERT_STRING(expected_cwd, new_cwd, info);
+    CINTA_ASSERT_STRING(expected_lwd, lwd, info);
 
     free(new_cwd);
     free(expected_cwd);
@@ -101,8 +92,6 @@ static void test_cd_path_valid(test_info *info) {
 }
 
 static void test_cd_previous_exists(test_info *info) {
-    print_test_name("Testing `cd -` when `lwd` exists");
-
     init_cwd_and_lwd();
 
     char *expected_cwd = getcwd(NULL, PATH_MAX);
@@ -118,9 +107,9 @@ static void test_cd_previous_exists(test_info *info) {
 
     char *new_cwd = getcwd(NULL, PATH_MAX);
 
-    handle_int_test(0, res->exit_code, __LINE__, __FILE__, info);
-    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
-    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, res->exit_code, info);
+    CINTA_ASSERT_STRING(expected_cwd, new_cwd, info);
+    CINTA_ASSERT_STRING(expected_lwd, lwd, info);
 
     free(new_cwd);
     free(expected_cwd);
@@ -130,8 +119,6 @@ static void test_cd_previous_exists(test_info *info) {
 }
 
 static void test_cd_previous_non_existent(test_info *info) {
-    print_test_name("Testing `cd -` when `lwd` doesn't exist");
-
     init_cwd_and_lwd();
 
     char *expected_cwd = getcwd(NULL, PATH_MAX);
@@ -142,10 +129,10 @@ static void test_cd_previous_non_existent(test_info *info) {
 
     char *new_cwd = getcwd(NULL, PATH_MAX);
 
-    handle_int_test(0, res->exit_code, __LINE__, __FILE__, info);
-    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
-    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
-    handle_string_test(new_cwd, lwd, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, res->exit_code, info);
+    CINTA_ASSERT_STRING(expected_cwd, new_cwd, info);
+    CINTA_ASSERT_STRING(expected_lwd, lwd, info);
+    CINTA_ASSERT_STRING(new_cwd, lwd, info);
 
     free(expected_cwd);
     free(expected_lwd);
@@ -155,8 +142,6 @@ static void test_cd_previous_non_existent(test_info *info) {
 }
 
 static void test_cd_path_non_existent(test_info *info) {
-    print_test_name("Testing with an non-existent dir");
-
     init_cwd_and_lwd();
 
     char *expected_cwd = getcwd(NULL, PATH_MAX);
@@ -171,9 +156,9 @@ static void test_cd_path_non_existent(test_info *info) {
 
     char *new_cwd = getcwd(NULL, PATH_MAX);
 
-    handle_int_test(1, res->exit_code, __LINE__, __FILE__, info);
-    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
-    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(1, res->exit_code, info);
+    CINTA_ASSERT_STRING(expected_cwd, new_cwd, info);
+    CINTA_ASSERT_STRING(expected_lwd, lwd, info);
 
     free(expected_cwd);
     free(expected_lwd);
@@ -183,8 +168,6 @@ static void test_cd_path_non_existent(test_info *info) {
 }
 
 static void test_cd_path_is_not_dir(test_info *info) {
-    print_test_name("Testing cd on a non-directory file");
-
     init_cwd_and_lwd();
 
     char *expected_cwd = getcwd(NULL, PATH_MAX);
@@ -199,9 +182,9 @@ static void test_cd_path_is_not_dir(test_info *info) {
 
     char *new_cwd = getcwd(NULL, PATH_MAX);
 
-    handle_int_test(1, res->exit_code, __LINE__, __FILE__, info);
-    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
-    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(1, res->exit_code, info);
+    CINTA_ASSERT_STRING(expected_cwd, new_cwd, info);
+    CINTA_ASSERT_STRING(expected_lwd, lwd, info);
 
     free(expected_cwd);
     free(expected_lwd);
@@ -211,8 +194,6 @@ static void test_cd_path_is_not_dir(test_info *info) {
 }
 
 static void test_cd_symlink(test_info *info) {
-    print_test_name("Testing cd on a symlink");
-
     init_cwd_and_lwd();
 
     char target_path[] = "tmp/dir/symlink_target";
@@ -228,9 +209,9 @@ static void test_cd_symlink(test_info *info) {
 
     char *new_cwd = getcwd(NULL, PATH_MAX);
 
-    handle_int_test(0, res->exit_code, __LINE__, __FILE__, info);
-    handle_string_test(expected_cwd, new_cwd, __LINE__, __FILE__, info);
-    handle_string_test(expected_lwd, lwd, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, res->exit_code, info);
+    CINTA_ASSERT_STRING(expected_cwd, new_cwd, info);
+    CINTA_ASSERT_STRING(expected_lwd, lwd, info);
 
     free(expected_cwd);
     free(expected_lwd);

@@ -5,14 +5,6 @@
 #include "../src/jobs.h"
 #include "test_core.h"
 
-void handle_command_call_test(command_call *actual, command_call *expected, int line, const char *file,
-                              test_info *info);
-
-void handle_command_test(command *actual, command *expected, int line, const char *file, test_info *info);
-
-void handle_command_result_test(command_result *actual, command_result *expected, int line, const char *file,
-                                test_info *info);
-void handle_job_test(job *actual, job *expected, int line, const char *file, test_info *info);
 
 void helper_mute_update_jobs(char *file_name);
 
