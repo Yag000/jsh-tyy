@@ -22,8 +22,10 @@ TEST_VALGRIND=$(SCRIPTSDIR)/test_valgrind.sh
 TEST_PROFESSOR=$(SCRIPTSDIR)/test_professor.sh
 TEST_TYY=$(SCRIPTSDIR)/test_tyy.sh
 
+CINTA=include/cinta.h cinta/cinta.c
+
 SRCFILES := $(shell find $(SRCDIR) -type f -name "*.c")
-TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c")
+TESTFILES := $(shell find $(TESTDIR) -type f -name "*.c") $(CINTA)
 
 OBJFILES := $(patsubst $(SRCDIR)/%.c,$(SRCOBJDIR)/%.o,$(SRCFILES))
 TESTOBJFILES := $(patsubst $(TESTDIR)/%.c,$(TESTOBJDIR)/%.o,$(TESTFILES))
