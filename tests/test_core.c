@@ -1,149 +1,111 @@
-#include <assert.h>
 #include <fcntl.h>
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 #include "test_core.h"
 
-static void print_green() {
-    printf("\033[0;32m");
-}
+int check_command_call(command_call *actual, command_call *expected) {
 
-static void print_red() {
-    printf("\033[0;31m");
-}
-
-static void print_no_color() {
-    printf("\033[0m");
-}
-
-/** Creates a new test_info. */
-test_info *create_test_info() {
-    test_info *info = malloc(sizeof(test_info));
-    assert(info != NULL);
-    info->passed = 0;
-    info->failed = 0;
-    info->total = 0;
-    info->time = 0;
-
-    return info;
-}
-
-/** Destroys the test_info . */
-void destroy_test_info(test_info *info) {
-    free(info);
-}
-
-/** Prints the test info. */
-void print_test_info(const test_info *info) {
-    if (info->failed > 0) {
-        print_red();
-    } else {
-        print_green();
-    }
-    printf("passed: %d, failed: %d, total: %d, time: %f seconds\n", info->passed, info->failed, info->total,
-           info->time);
-    print_no_color();
-}
-
-double clock_ticks_to_seconds(clock_t ticks) {
-    return (double)ticks / CLOCKS_PER_SEC;
-}
-
-void print_test_header(const char *name) {
-    if (debug) {
-        printf("\n----------------------- Testing %s -----------------------\n", name);
-    }
-}
-
-void print_test_footer(const char *name, const test_info *info) {
-    if (debug) {
-        printf("\n");
+    if (actual->argc != expected->argc) {
+        return 0;
     }
 
-    printf("Test %s: ", name);
-    print_test_info(info);
-
-    if (debug) {
-        printf("\n----------------------- End test %s -----------------------\n", name);
+    for (size_t i = 0; i < actual->argc; i++) {
+        if (strcmp(actual->argv[i], expected->argv[i]) != 0) {
+            return 0;
+        }
     }
+
+    if (strcmp(actual->command_string, expected->command_string) != 0) {
+        return 0;
+    }
+
+    if (actual->stdin != expected->stdin) {
+        return 0;
+    }
+    if (actual->stdout != expected->stdout) {
+        return 0;
+    }
+    if (actual->stderr != expected->stderr) {
+        return 0;
+    }
+
+    return 1;
 }
 
-void print_test_name(const char *name) {
-    if (debug) {
-        printf("\n-> %s\n", name);
+int check_command(command *actual, command *expected) {
+    if (actual->command_call_count != expected->command_call_count) {
+        return 0;
     }
+
+    for (size_t i = 0; i < actual->command_call_count; i++) {
+        if (!check_command_call(actual->command_calls[i], expected->command_calls[i])) {
+            return 0;
+        }
+    }
+
+    if (actual->background != expected->background) {
+        return 0;
+    }
+
+    if (actual->open_pipes_size != expected->open_pipes_size) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < actual->open_pipes_size; i++) {
+        for (size_t j = 0; j < 2; j++) {
+            if (actual->open_pipes[i][j] != expected->open_pipes[i][j]) {
+                return 0;
+            }
+        }
+    }
+
+    return 1;
+}
+int check_command_result(command_result *actual, command_result *expected) {
+    if (actual->exit_code != expected->exit_code) {
+        return 0;
+    }
+
+    return 1;
 }
 
-void handle_string_test(const char *expected, const char *actual, int line, const char *file, test_info *info) {
-    info->total++;
-    if (strcmp(expected, actual) != 0) {
-        print_red();
-        printf("Error: '%s' != '%s' at line %d in file %s\n", expected, actual, line, file);
-        print_no_color();
-        info->failed++;
-        return;
+int check_subjob(subjob *actual, subjob *expected) {
+
+    if (actual->pid != expected->pid) {
+        return 0;
     }
-    if (debug) {
-        print_green();
-        printf("Passed: '%s' == '%s' at line %d in file %s\n", expected, actual, line, file);
-        print_no_color();
+
+    if (actual->last_status != expected->last_status) {
+        return 0;
     }
-    info->passed++;
+
+    if (strcmp(actual->command, expected->command) != 0) {
+        return 0;
+    }
+
+    return 1;
 }
 
-void handle_boolean_test(bool expected, bool actual, int line, const char *file, test_info *info) {
-    info->total++;
-    if (expected != actual) {
-        print_red();
-        printf("Error: %d != %d at line %d in file %s\n", expected, actual, line, file);
-        print_no_color();
-        info->failed++;
-        return;
-    }
-    if (debug) {
-        print_green();
-        printf("Passed: %d == %d at line %d in file %s\n", expected, actual, line, file);
-        print_no_color();
-    }
-    info->passed++;
-}
+int check_job(job *actual, job *expected) {
 
-void handle_int_test(int expected, int actual, int line, const char *file, test_info *info) {
-    info->total++;
-    if (expected != actual) {
-        print_red();
-        printf("Error: %d != %d at line %d in file %s\n", expected, actual, line, file);
-        print_no_color();
-        info->failed++;
-        return;
+    if (actual->id != expected->id) {
+        return 0;
     }
-    if (debug) {
-        print_green();
-        printf("Passed: %d == %d at line %d in file %s\n", expected, actual, line, file);
-        print_no_color();
-    }
-    info->passed++;
-}
 
-void handle_null_test(void *actual, int line, const char *file, test_info *info) {
-    info->total++;
-    if (NULL != actual) {
-        print_red();
-        printf("Error: pointer should be NULL at line %d in file %s\n", line, file);
-        print_no_color();
-        info->failed++;
-        return;
+    if (actual->subjobs_size != expected->subjobs_size) {
+        return 0;
     }
-    if (debug) {
-        print_green();
-        printf("Passed: NULL pointer at line %d in file %s\n", line, file);
-        print_no_color();
+
+    for (size_t i = 0; i < actual->subjobs_size; i++) {
+        if (!check_subjob(actual->subjobs[i], expected->subjobs[i])) {
+            return 0;
+        }
     }
-    info->passed++;
+
+    return 1;
 }
 
 int open_test_file_to_write(const char *filename) {

@@ -7,34 +7,21 @@
 #include <strings.h>
 #include <unistd.h>
 
+#define NUM_TEST 3
+
 void test_redirection_stdin(test_info *info);
 void test_redirection_stdout(test_info *info);
 void test_redirection_stderr(test_info *info);
 
 test_info *test_redirection() {
+    test_case cases[NUM_TEST] = {SLOW_CASE("Testing input redirection", test_redirection_stdin),
+                                 SLOW_CASE("Testing output redirection", test_redirection_stdout),
+                                 SLOW_CASE("Testing error redirection", test_redirection_stderr)};
 
-    // Test setup
-    print_test_header("redirections");
-    clock_t start = clock();
-    test_info *info = create_test_info();
-
-    test_redirection_stdin(info);
-    test_redirection_stdout(info);
-    test_redirection_stderr(info);
-
-    // End of tests
-    info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("redirections", info);
-    return info;
+    return cinta_run_cases("redirection", cases, NUM_TEST);
 }
 
 void test_redirection_stdin(test_info *info) {
-    if (!allow_slow) {
-        return;
-    }
-
-    print_test_name("Testing input redirection");
-
     int write_fd = open_test_file_to_write("test_redirection_input.log");
     char *buf = "A simple sentence to be written.";
     write(write_fd, buf, strlen(buf));
@@ -60,15 +47,10 @@ void test_redirection_stdin(test_info *info) {
     buffer[strlen(buf)] = '\0';
     close(read_fd);
 
-    handle_string_test(buf, buffer, __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(buf, buffer, info);
 }
 
 void test_redirection_stdout(test_info *info) {
-    if (!allow_slow) {
-        return;
-    }
-    print_test_name("Testing output redirection");
-
     int fd = open_test_file_to_write("test_redirection_output.log");
 
     command *command = parse_command("echo HelloWorld");
@@ -86,15 +68,10 @@ void test_redirection_stdout(test_info *info) {
 
     char *expected = "HelloWorld";
     buffer[strlen(expected)] = '\0';
-    handle_string_test(expected, buffer, __LINE__, __FILE__, info);
+    CINTA_ASSERT_STRING(expected, buffer, info);
 }
 
 void test_redirection_stderr(test_info *info) {
-    if (!allow_slow) {
-        return;
-    }
-    print_test_name("Testing output redirection");
-
     int fd = open_test_file_to_write("test_redirection_error.log");
 
     command *command = parse_command("mv .");
@@ -110,5 +87,5 @@ void test_redirection_stderr(test_info *info) {
     int read_bytes = read(read_fd, buffer, 1024);
     close(read_fd);
 
-    handle_boolean_test(true, read_bytes > 0, __LINE__, __FILE__, info);
+    CINTA_ASSERT(read_bytes > 0, info);
 }

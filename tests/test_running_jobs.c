@@ -9,6 +9,8 @@
 #include "test_core.h"
 #include "utils.h"
 
+#define NUM_TEST 5
+
 void test_case_are_jobs_running_no_jobs(test_info *);
 void test_case_are_jobs_running_one_job(test_info *);
 void test_case_are_jobs_running_one_instant_job(test_info *);
@@ -16,31 +18,24 @@ void test_case_are_jobs_running_kill(test_info *);
 void test_case_are_jobs_running_stop(test_info *);
 
 test_info *test_running_jobs() {
-    // Test setup
-    print_test_header("running jobs");
-    clock_t start = clock();
-    test_info *info = create_test_info();
+    test_case cases[NUM_TEST] = {
+        QUICK_CASE("Testing are_jobs_running - No jobs", test_case_are_jobs_running_no_jobs),
+        QUICK_CASE("Testing are_jobs_running - One running job", test_case_are_jobs_running_one_job),
+        SLOW_CASE("Testing are_jobs_running - One instant job", test_case_are_jobs_running_one_instant_job),
+        SLOW_CASE("Testing are_jobs_running - One killed job", test_case_are_jobs_running_kill),
+        SLOW_CASE("Testing are_jobs_running - One stopped job", test_case_are_jobs_running_stop)};
 
-    // Add tests here
-    test_case_are_jobs_running_no_jobs(info);
-    test_case_are_jobs_running_one_job(info);
-    test_case_are_jobs_running_one_instant_job(info);
-    test_case_are_jobs_running_kill(info);
-    test_case_are_jobs_running_stop(info);
+    test_info *info = cinta_run_cases("running jobs", cases, NUM_TEST);
 
-    // End of tests
     init_job_table();
-    info->time = clock_ticks_to_seconds(clock() - start);
-    print_test_footer("running jobs", info);
     return info;
 }
 
 void test_case_are_jobs_running_no_jobs(test_info *info) {
-    print_test_name("Testing are_jobs_running - No jobs");
 
     init_job_table();
 
-    handle_boolean_test(0, are_jobs_running(), __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, are_jobs_running(), info);
 }
 
 void helper_mute_update_jobs(char *file_name) {
@@ -62,7 +57,6 @@ command_result *helper_execute_bg(char *scommand) {
 }
 
 void test_case_are_jobs_running_one_job(test_info *info) {
-    print_test_name("Testing are_jobs_running - One running job");
 
     init_job_table();
 
@@ -70,9 +64,9 @@ void test_case_are_jobs_running_one_job(test_info *info) {
 
     helper_mute_update_jobs("test_running_jobs_one_job.log");
 
-    handle_int_test(1, are_jobs_running(), __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(1, are_jobs_running(), info);
 
-    handle_int_test(RUNNING, job_table[0]->subjobs[0]->last_status, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(RUNNING, job_table[0]->subjobs[0]->last_status, info);
 
     kill(result->pid, SIGKILL);
 
@@ -81,12 +75,6 @@ void test_case_are_jobs_running_one_job(test_info *info) {
 }
 
 void test_case_are_jobs_running_one_instant_job(test_info *info) {
-    if (!allow_slow) {
-        return;
-    }
-
-    print_test_name("Testing are_jobs_running - One instant job");
-
     init_job_table();
 
     int fd = open_test_file_to_write("test_running_jobs_one_instant_job_out.log");
@@ -100,19 +88,13 @@ void test_case_are_jobs_running_one_instant_job(test_info *info) {
 
     helper_mute_update_jobs("test_running_jobs_one_instant_job.log");
 
-    handle_int_test(0, are_jobs_running(), __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, are_jobs_running(), info);
 
     destroy_command_result(result);
     init_job_table();
 }
 
 void test_case_are_jobs_running_kill(test_info *info) {
-    if (!allow_slow) {
-        return;
-    }
-
-    print_test_name("Testing are_jobs_running - One killed job");
-
     init_job_table();
 
     command_result *result = helper_execute_bg("sleep 100");
@@ -124,19 +106,13 @@ void test_case_are_jobs_running_kill(test_info *info) {
 
     helper_mute_update_jobs("test_running_jobs_kill.log");
 
-    handle_int_test(0, are_jobs_running(), __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(0, are_jobs_running(), info);
 
     destroy_command_result(result);
     init_job_table();
 }
 
 void test_case_are_jobs_running_stop(test_info *info) {
-    if (!allow_slow) {
-        return;
-    }
-
-    print_test_name("Testing are_jobs_running - One stopped job");
-
     init_job_table();
 
     command_result *result = helper_execute_bg("sleep 100");
@@ -148,8 +124,8 @@ void test_case_are_jobs_running_stop(test_info *info) {
 
     helper_mute_update_jobs("test_running_jobs_stop.log");
 
-    handle_int_test(1, are_jobs_running(), __LINE__, __FILE__, info);
-    handle_int_test(STOPPED, job_table[0]->subjobs[0]->last_status, __LINE__, __FILE__, info);
+    CINTA_ASSERT_INT(1, are_jobs_running(), info);
+    CINTA_ASSERT_INT(STOPPED, job_table[0]->subjobs[0]->last_status, info);
 
     kill(result->pid, SIGKILL);
 
